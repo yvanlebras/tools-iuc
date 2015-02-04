@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<tool_dependency>
+  <package name="numpy" version="1.8.1">
+    <repository name="package_numpy_1_8" owner="iuc" prior_installation_required="True"/>
+  </package>
+  <package name="hdf5" version="1.8.12">
+    <repository name="package_hdf5_1_8_12" owner="iuc" prior_installation_required="True" />
+  </package>
+  <package name="package_pbalign_2014_04_28" version="2014.04.28">
+    <install version="1.0">
+      <actions>
+        <action type="shell_command">git clone https://github.com/PacificBiosciences/pbalign package_pbalign_2014_04_28</action>
+        <action type="shell_command">git reset --hard a95c61749be66fff26893a2ca9d432b06d77639e</action>
+        <action type="set_environment_for_install">
+          <repository name="package_numpy_1_8" owner="iuc">
+            <package name="numpy" version="1.8.1"/>
+          </repository>
+          <repository name="package_hdf5_1_8_12" owner="iuc">
+            <package name="hdf5" version="1.8.12"/>
+          </repository>
+        </action>
+        <action type="make_directory">$INSTALL_DIR/lib/python</action>
+        <action type="shell_command">export PYTHONPATH=$PYTHONPATH:$INSTALL_DIR/lib/python &amp;&amp; python setup.py install --install-lib $INSTALL_DIR/lib/python --install-scripts $INSTALL_DIR/bin</action>
+      </actions>
+    </install>
+    <readme>pbalign maps PacBio reads to reference sequences.
+</readme>
+  </package>
+</tool_dependency>

@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<tool id="pandoc" name="pandoc" version="@WRAPPER_VERSION@.0">
+  <description>convert text documents</description>
+  <command><![CDATA[
+pandoc --from $infile_format --to $outfile_format
+--data-dir=$output.files_path
+
+> $output]]></command>
+  <inputs>
+    <param name="infile" type="data" format="txt" label="Input File"/>
+    <param name="infile_format" type="select" label="Input Format">
+        <option value="html">html</option>
+        <option value="json">json</option>
+        <option value="latex">latex</option>
+        <option value="latex+lhs">latex+lhs</option>
+        <option value="markdown" selected="true">markdown</option>
+        <option value="markdown+lhs">markdown+lhs</option>
+        <option value="native">native</option>
+        <option value="rst">rst</option>
+        <option value="rst+lhs">rst+lhs</option>
+        <option value="textile">textile</option>
+    </param>
+    <param name="outfile_format" type="select" label="Output Format">
+        <option value="asciidoc">asciidoc</option>
+        <option value="beamer">beamer</option>
+        <option value="context">context</option>
+        <option value="docbook">docbook</option>
+        <option value="docx">docx</option>
+        <option value="dzslides">dzslides</option>
+        <option value="epub">epub</option>
+        <option value="html">html</option>
+        <option value="html+lhs">html+lhs</option>
+        <option value="html5">html5</option>
+        <option value="html5+lhs">html5+lhs</option>
+        <option value="json">json</option>
+        <option value="latex">latex</option>
+        <option value="latex+lhs">latex+lhs</option>
+        <option value="man">man</option>
+        <option value="markdown">markdown</option>
+        <option value="markdown+lhs">markdown+lhs</option>
+        <option value="mediawiki">mediawiki</option>
+        <option value="native">native</option>
+        <option value="odt">odt</option>
+        <option value="opendocument">opendocument</option>
+        <option value="org">org</option>
+        <option value="plain">plain</option>
+        <option value="rst">rst</option>
+        <option value="rst+lhs">rst+lhs</option>
+        <option value="rtf">rtf</option>
+        <option value="s5">s5</option>
+        <option value="slidy">slidy</option>
+        <option value="texinfo">texinfo</option>
+        <option value="textile">textile</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data name="output" label="$infile.name converted to $outfmt"/>
+  </outputs>
+  <tests>
+  </tests>
+  <help><![CDATA[
+**What it does**
+
+Converts Documents
+
+]]></help>
+</tool>

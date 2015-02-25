@@ -16,12 +16,12 @@
 #end if
 
 #if $reads_source.source_select == "fasta"
-ln -sfn $reads_source.fasta_reads ${reads_source.fasta_reads}.fa;
+ln -sfn $reads_source.fasta_reads input.fa;
 #end if
 
 blasr
 #if $reads_source.source_select == "fasta"
-    ${reads_source.fasta_reads}.fa
+    input.fa
 #else
     ${reads_source.reads.extra_files_path}/parent.bas.h5
 #end if

@@ -208,7 +208,7 @@ $placeRepeatsRandomly $printSAMQV
         <when format="tabular" input="sam" value="False"/>
       </change_format>
     </data>
-    <data format="sam" name="unaligned_reads_output" label="Unaligned reads">
+    <data format="fasta" name="unaligned_reads_output" label="Unaligned reads">
         <filter>unaligned == True</filter>
     </data>
   </outputs>

@@ -16,9 +16,8 @@
 #end if
 
 #if $reads_source.source_select == "fasta"
-ln -s $reads_source.fasta_reads ${reads_source.fasta_reads}.fa;
+ln -sfn $reads_source.fasta_reads ${reads_source.fasta_reads}.fa;
 #end if
-
 
 blasr
 #if $reads_source.source_select == "fasta"
@@ -27,7 +26,6 @@ blasr
     ${reads_source.reads.extra_files_path}/parent.bas.h5
 #end if
 ${genome_fasta}
-
 
 #if $sa and $sa is not "None":
 -sa "${sa}"
@@ -41,76 +39,26 @@ ${genome_fasta}
 -regionTable regiontable.fofn
 #end if
 
-#if $useccs:
--useccs
-#end if
-
-#if $useccsall:
--useccsall
-#end if
-
-#if $useccsdenovo:
--useccsdenovo
-#end if
-
-#if $noSplitSubreads:
--noSplitSubreads
-#end if
-
-#if $ignoreRegions:
--ignoreRegions
-#end if
-
-#if $ignoreHQRegions:
--ignoreHQRegions
-#end if
+$useccs $useccsall $useccsdenovo $noSplitSubreads $ignoreRegions
+$ignoreHQRegions $sam $noSortRefinedAlignments $allowAdjacentIndels $header
+$placeRepeatsRandomly $printSAMQV
 
 #if $bestn and $bestn is not "None" and int($bestn) > 0:
 -bestn "${bestn}"
-#end if
-
-#if $sam:
--sam
-#end if
-
-#if $unaligned:
--unaligned
 #end if
 
 #if $m and $m is not "None":
 -m "${m}"
 #end if
 
-#if $noSortRefinedAlignments:
--noSortRefinedAlignments
-#end if
-
-#if $allowAdjacentIndels:
--allowAdjacentIndels
-#end if
-
-#if $header:
--header
-#end if
-
 #if $titleTable and $titleTable is not "None":
 -titleTable "${titleTable}"
 #end if
 
-#if $minPctIdentity and $minPctIdentity is not "None":
--minPctIdentity "${minPctIdentity}"
-#end if
+-minPctIdentity ${minPctIdentity}
 
 #if $holeNumbers and $holeNumbers is not "None":
 -holeNumbers "${holeNumbers}"
-#end if
-
-#if $placeRepeatsRandomly:
--placeRepeatsRandomly
-#end if
-
-#if $printSAMQV:
--printSAMQV
 #end if
 
 #if $unaligned:
@@ -118,7 +66,7 @@ ${genome_fasta}
 #end if
 
 -out $alignment_output
-
+-nproc \${GALAXY_SLOTS:-2}
 </command>
   <inputs>
     <conditional name="reads_source">
@@ -134,21 +82,65 @@ ${genome_fasta}
         </when>
     </conditional>
     <param help="Fasta Genome" label="genome_fasta" name="genome_fasta" optional="False" type="data" format="fasta"/>
-    <param help="Use the suffix array 'sa' for detecting matches between the reads and the reference.  The suffix array has been prepared by the sawriter program." label="sa" name="sa" optional="True" type="data"/>
-    <param format="pacbio_ctab" help="A table of tuple counts used to estimate match significance. This is by the program 'printTupleCountTable'.  While it is quick to generate on the fly, if there are many invocations of blasr, it is useful to precompute the ctab." label="ctab" name="ctab" optional="True" type="data"/>
+    <param label="sa" name="sa" type="data">
+        <help>Use the suffix array 'sa' for detecting matches between the reads
+            and the reference.  The suffix array has been prepared by the
+            sawriter program.</help>
+    </param>
+    <param format="pacbio_ctab" label="ctab" name="ctab" type="data">
+        <help>A table of tuple counts used to estimate match significance. This
+            is by the program 'printTupleCountTable'.  While it is quick to
+            generate on the fly, if there are many invocations of blasr, it is
+            useful to precompute the ctab.</help>
+    </param>
     <repeat name="repeat_regionTable" title="Regiontable">
-      <param format="pacbio_hdf" help="Read in a read-region table in HDF format for masking portions of reads. This may be a single table if there is just one input file, or a fofn.  When a region table is specified, any region table inside the reads.plx.h5 or reads.bax.h5 files are ignored." label="regionTable" name="regionTable" optional="True" type="data"/>
+        <param format="pacbio_hdf" label="regionTable" name="regionTable" type="data">
+            <help>Read in a read-region table in HDF format for masking
+                portions of reads. This may be a single table if there is just
+                one input file, or a fofn.  When a region table is specified,
+                any region table inside the reads.plx.h5 or reads.bax.h5 files
+                are ignored.</help>
+        </param>
     </repeat>
-    <param checked="" falsevalue="False" help="Align the circular consensus sequence (ccs), then report alignments of the ccs subreads to the window that the ccs was mapped to.  Only alignments of the subreads are reported." label="useccs" name="useccs" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Similar to -useccs, except all subreads are aligned, rather than just the subreads used to call the ccs.  This will include reads that only cover part of the template." label="useccsall" name="useccsall" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Align the circular consensus, and report only the alignment of the ccs sequence." label="useccsdenovo" name="useccsdenovo" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Do not split subreads at adapters.  This is typically only useful when the genome in an unrolled version of a known template, and contains template-adapter-reverse_template sequence." label="noSplitSubreads" name="noSplitSubreads" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Ignore any information in the region table." label="ignoreRegions" name="ignoreRegions" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Ignore any hq regions in the region table" label="ignoreHQRegions" name="ignoreHQRegions" optional="True" truevalue="True" type="boolean"/>
-    <param help="report the top 'n' alignments, or -1 for all" label="bestn" name="bestn" optional="True" type="integer" value="-1"/>
-    <param checked="True" falsevalue="False" help="Write output in SAM format" label="sam" name="sam" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Output reads that are not aligned to a file" label="unaligned" name="unaligned" optional="True" truevalue="True" type="boolean"/>
-    <param help="If not printing in SAM, modify the output of the alignment." label="m" name="m" optional="True" type="select">
+    <param falsevalue="" label="useccs" name="useccs" truevalue="-useccs" type="boolean">
+        <help>Align the circular consensus sequence (ccs), then report
+            alignments of the ccs subreads to the window that the ccs was
+            mapped to.  Only alignments of the subreads are reported.</help>
+    </param>
+    <param falsevalue="" label="useccsall" name="useccsall" truevalue="-useccsall" type="boolean">
+        <help>Similar to -useccs, except all subreads are aligned, rather than
+            just the subreads used to call the ccs.  This will include reads
+            that only cover part of the template.</help>
+    </param>
+    <param falsevalue="" label="useccsdenovo" name="useccsdenovo"
+        truevalue="-useccsdenovo" type="boolean">
+        <help>Align the circular consensus, and report only the alignment of
+            the ccs sequence. (-useccsdenovo)</help>
+    </param>
+    <param falsevalue="" label="noSplitSubreads" name="noSplitSubreads"
+        truevalue="-noSplitSubreads" type="boolean">
+        <help>Do not split subreads at adapters.  This is typically only useful
+            when the genome in an unrolled version of a known template, and
+            contains template-adapter-reverse_template sequence. (-noSplitSubreads)</help>
+    </param>
+    <param falsevalue="" label="ignoreRegions" name="ignoreRegions"
+        optional="-ignoreRegions" truevalue="True" type="boolean">
+        <help>Ignore any information in the region table. (-ignoreRegions)</help>
+    </param>
+    <param falsevalue="" help="Ignore any hq regions in the region table"
+        label="ignoreHQRegions" name="ignoreHQRegions"
+        truevalue="-ignoreHQRegions" type="boolean"/>
+    <param help="report the top 'n' alignments, or -1 for all (-bestn)" label="bestn"
+        name="bestn" type="integer" value="-1"/>
+    <param selected="True" falsevalue="" help="Write output in SAM format (-sam)"
+        label="sam" name="sam" truevalue="-sam"
+        type="boolean"/>
+
+    <param falsevalue="False" help="Output reads that are not aligned to a file (-unaligned)"
+        label="unaligned" name="unaligned" truevalue="True"
+        type="boolean"/>
+
+    <param help="If not printing in SAM, modify the output of the alignment. (-m)" label="Output Format" name="m" type="select">
       <option value="0">Print blast like output with |s connecting the matched nucleotides</option>
       <option value="1">Print only a summary: score and pos.</option>
       <option value="2">Print in Compare.xml format.</option>
@@ -156,14 +148,58 @@ ${genome_fasta}
       <option value="4">Print a longer tabular version of the alignment.</option>
       <option value="5">Print in a machine-parsable format that is read by compareSequences.py.</option>
     </param>
-    <param checked="" falsevalue="False" help="Once candidate alignments are generated and scored via sparse dynamic programming, they are rescored using local alignment that accounts for different error profiles. Resorting based on the local alignment may change the order the hits are returned." label="noSortRefinedAlignments" name="noSortRefinedAlignments" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="When specified, adjacent insertion or deletions are allowed. Otherwise, adjacent insertion and deletions are merged into one operation.  Using quality values to guide pairwise alignments may dictate that the higher probability alignment contains adjacent insertions or deletions.  Current tools such as GATK do not permit this and so they are not reported by default." label="allowAdjacentIndels" name="allowAdjacentIndels" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Print a header as the first line of the output file describing the contents of each column." label="header" name="header" optional="True" truevalue="True" type="boolean"/>
-    <param help="Construct a table of reference sequence titles.  The reference sequences are enumerated by row, 0,1,...  The reference index is printed in alignment results rather than the full reference name. This makes output concise, particularly when very verbose titles exist in reference names." label="titleTable" name="titleTable" optional="True" type="text"/>
-    <param help="Only report alignments if they are greater than p percent identity." label="minPctIdentity" name="minPctIdentity" optional="True" type="integer" value="0"/>
-    <param help="When specified, only align reads whose ZMW hole numbers are in LIST. LIST is a comma-delimited string of ranges, such as '1,2,3,10-13'. This option only works when reads are in base or pulse h5 format." label="holeNumbers" name="holeNumbers" optional="True" type="text"/>
-    <param checked="" falsevalue="False" help="When there are multiple positions to map a read with equal alignment scores, place the read randomly at one of them." label="placeRepeatsRandomly" name="placeRepeatsRandomly" optional="True" truevalue="True" type="boolean"/>
-    <param checked="" falsevalue="False" help="Print quality values to sam files." label="printSAMQV" name="printSAMQV" optional="True" truevalue="True" type="boolean"/>
+    <param falsevalue="" label="noSortRefinedAlignments"
+        name="noSortRefinedAlignments" truevalue="-noSortRefinedAlignments"
+        type="boolean">
+        <help>Once candidate alignments are generated and scored via sparse
+            dynamic programming, they are rescored using local alignment that
+            accounts for different error profiles. Resorting based on the local
+            alignment may change the order the hits are returned.
+            (-noSortRefinedAlignments)</help>
+    </param>
+    <param falsevalue="" label="allowAdjacentIndels" name="allowAdjacentIndels"
+        truevalue="-allowAdjacentIndels" type="boolean">
+        <help>When specified, adjacent insertion or deletions are allowed.
+            Otherwise, adjacent insertion and deletions are merged into one
+            operation.  Using quality values to guide pairwise alignments may
+            dictate that the higher probability alignment contains adjacent
+            insertions or deletions.  Current tools such as GATK do not permit
+            this and so they are not reported by default.
+            (-allowAdjacentIndels)</help>
+    </param>
+    <param falsevalue="" label="header" name="header" truevalue="-header" type="boolean">
+        <help>Print a header as the first line of the output file describing
+            the contents of each column. (-header)</help>
+    </param>
+    <param label="titleTable" name="titleTable" type="text">
+        <help>Construct a table of reference sequence titles.  The reference
+            sequences are enumerated by row, 0,1,...  The reference index is
+            printed in alignment results rather than the full reference name.
+            This makes output concise, particularly when very verbose titles
+            exist in reference names. (-titleTable)</help>
+    </param>
+    <param label="minPctIdentity" name="minPctIdentity" type="integer" value="0">
+        <help>Only report alignments if they are greater than p percent
+            identity. (-minPctIdentity)</help>
+    </param>
+    <!-- TODO: conditional -->
+    <param label="holeNumbers" name="holeNumbers" type="text">
+        <help>When specified, only align reads whose ZMW hole numbers are in
+            LIST. LIST is a comma-delimited string of ranges, such as
+            '1,2,3,10-13'. This option only works when reads are in base or
+            pulse h5 format. (-holeNumbers)</help>
+    </param>
+    <param falsevalue="" label="placeRepeatsRandomly"
+        name="placeRepeatsRandomly" truevalue="-placeRepeatsRandomly"
+        type="boolean">
+        <help>When there are multiple positions to map a read with equal
+            alignment scores, place the read randomly at one of them.
+            (-placeRepeatsRandomly)</help>
+    </param>
+    <param falsevalue="" label="printSAMQV" name="printSAMQV"
+        truevalue="-printSAMQV" type="boolean">
+        <help>Print quality values to sam files. (-printSAMQV)</help>
+    </param>
   </inputs>
   <outputs>
     <data format="sam" name="alignment_output">
@@ -172,11 +208,67 @@ ${genome_fasta}
         <when format="tabular" input="sam" value="False"/>
       </change_format>
     </data>
-    <data format="sam" name="unaligned_reads_output">
+    <data format="sam" name="unaligned_reads_output" label="Unaligned reads">
         <filter>unaligned == True</filter>
     </data>
   </outputs>
-  <help>PacBio(R) Long Read Aligner
+  <help><![CDATA[
+PacBio(R) Long Read Aligner
+
+
+**DESCRIPTION**
+
+blasr is a read mapping program that maps reads to positions
+in a genome by clustering short exact matches between the read and
+the genome, and scoring clusters using alignment. The matches are
+generated by searching all suffixes of a read against the genome
+using a suffix array. Global chaining methods are used to score
+clusters of matches.
+
+The only required inputs to blasr are a file of reads and a
+reference genome.  It is exremely useful to have read filtering
+information, and mapping runtime may decrease substantially when a
+precomputed suffix array index on the reference sequence is
+specified.
+
+Although reads may be input in FASTA format, the recommended input is HDF
+bax.h5 and plx.h5 files because these contain qualtiy value
+information that is used in the alignment and produces higher quality
+variant detection.
+
+Read filtering information is contained in the .bax.h5 input files as
+well as generated by other post-processing programs with analysis of
+pulse files and read in from a separate .region.h5 file.  The current
+set of filters that are applied to reads are high quality region
+filtering, and adapter filtering.  Regions outside high-quality
+regions are ignored in mapping.  Reads that contain regions annotated
+as adapter are split into non-adapter (template) regions, and mapped
+separately.
+
+When suffix array index of a genome is not specified, the suffix array is
+built before producing alignment.   This may be prohibitively slow
+when the genome is large (e.g. Human).  It is best to precompute the
+suffix array of a genome using the program sawriter, and then specify
+the suffix array on the command line using -sa genome.fa.sa.
+
+The optional parameters are roughly divided into three categories:
+control over anchoring, alignment scoring, and output.
+
+The default anchoring parameters are optimal for small genomes and
+samples with up to 5% divergence from the reference genome.  The main
+parameter governing speed and sensitivity is the -minMatch parameter.
+For human genome alignments, a value of 11 or higher is recommended.
+Several methods may be used to speed up alignments, at the expense of
+possibly decreasing sensitivity.
+
+Regions that are too repetitive may be ignored during mapping by
+limiting the number of positions a read maps to with the
+-maxAnchorsPerPosition option.  Values between 500 and 1000 are effective
+in the human genome.
+
+For small genomes such as bacterial genomes or BACs, the default parameters
+are sufficient for maximal sensitivity and good speed.
+]]>
 </help>
   <tests/>
 </tool>

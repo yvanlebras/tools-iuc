@@ -1,0 +1,316 @@
+<tool id="art" name="ART" version="2014.11.03.0">
+  <description>simulates sequencing data</description>
+  <macros>
+      <import>macros.xml</import>
+  </macros>
+  <!--<expand macro="requirements" />-->
+  <expand macro="stdio" />
+
+  <stdio>
+    <exit_code level="fatal" range="1:"/>
+  </stdio>
+  <command><![CDATA[
+mkdir $output.files_path/;
+
+#if $m.sequencing_method == "454":
+    art_454 $t
+
+    #if $aln:
+    -a
+    #end if
+
+    #if $sam:
+    -s
+    #end if
+
+    #if $rndSeed > -1:
+    -r $rndSeed
+    #end if
+
+    #if $c
+    -c $c
+    #end if
+
+    #if $generate.amplicon.use_amplicon == "amplicon_true":
+        #if $generate.choice == "single_end":
+            -A
+        #else:
+            -B
+        #end if
+    #end if
+
+    $input_seq_file
+    $output.files_path/output
+
+    #if $generate.choice == "single_end":
+        $fold_coverage
+    #else:
+        $fold_coverage
+        $generate.fragment_size
+        $generate.fragment_sd
+    #end if
+
+    #if $generate.amplicon.use_amplicon == "amplicon_true":
+        #if $generate.choice == "single_end":
+            $generate.amplicon.reads_per_amplicon
+        #else:
+            $generate.amplicon.read_pairs_per_amplicon
+        #end if
+    #end if
+    > $output;
+
+#else if $m.sequencing_method == "illumina":
+
+    art_illumina
+
+    #if $sam:
+        --samout
+    #end if
+
+    #if not $aln:
+        --noALN
+    #end if
+
+    #if str($generate.choice) == "paired_end":
+        --paired
+        --mflen $generate.fragment_size
+        --sdev $generate.fragment_sd
+    #else if str($generate.choice) == "mate_pair":
+        --matepair
+        --mflen $generate.fragment_size
+        --sdev $generate.fragment_sd
+    #end if
+
+    --in $input_seq_file
+    --len $read_length
+    --fcov $fold_coverage
+
+    $amplicon
+
+    --insRate $insRate
+    --insRate2 $insRate2
+    --delRate $delRate
+    --delRate2 $delRate2
+
+    #if $rndSeed > -1:
+        --rndSeed $rndSeed
+    #end if
+
+    --out $output.files_path/output
+
+    > $output;
+
+#else if $m.sequencing_method == "solid":
+
+    art_SOLiD
+
+    #if $sam:
+    -s
+    #end if
+
+    #if $r and $r > -1:
+        -r $r
+    #end if
+
+    #if $generate.amplicon.use_amplicon == "amplicon_true":
+        -A
+
+        #if $generate.choice == "single_end":
+        s
+        #else if $generate.choice == "paired_end":
+        p
+        #else:
+        m
+        #end if
+
+    #end if
+
+    $input_seq_file
+    $output.files_path/output
+
+    #if $generate.choice == "single_end":
+        $generate.LEN_READ
+        $fold_coverage
+    #else if $generate.choice == "paired_end":
+        $generate.LEN_READ_f3
+        $generate.LEN_READ_f5
+        $fold_coverage
+        $generate.MEAN_FRAG_LEN
+        $generate.STD_DEV
+    #else:
+        $generate.LEN_READ
+        $fold_coverage
+        $generate.MEAN_FRAG_LEN
+        $generate.STD_DEV
+    #end if
+
+    #if $generate.amplicon.use_amplicon == "amplicon_true":
+        #if $generate.choice == "single_end":
+            $generate.amplicon.reads_per_amplicon
+        #else:
+            $generate.amplicon.read_pairs_per_amplicon
+        #end if
+    #end if
+    > $output;
+
+#end if
+
+
+## Move $output.files_path/output* to correct locations
+#if $generate.choice == "single_end":
+    mv $output.files_path/output.fq $output_fq1;
+#else:
+    #if $m.sequencing_method == "solid" and $generate.choice == "paired_end":
+        mv $output.files_path/output_F3.fq $output_fq1;
+        mv $output.files_path/output_F5.fq $output_fq2;
+    #else:
+        mv $output.files_path/output1.fq $output_fq1;
+        mv $output.files_path/output2.fq $output_fq2;
+    #end if
+#end if
+
+#if $aln:
+    #if $generate.choice == "single_end":
+        mv $output.files_path/output.aln $output_aln1;
+    #else:
+        mv $output.files_path/output1.aln $output_aln1;
+        mv $output.files_path/output2.aln $output_aln2;
+    #end if
+#end if
+
+#if $sam:
+    mv $output.files_path/output.sam $output_sam;
+#end if
+]]></command>
+    <inputs>
+        <param label="DNA/RNA reference sequence" format="fasta"
+            name="input_seq_file" type="data"/>
+        <param label="the fold of read coverage over the reference sequences"
+            name="fold_coverage" type="integer" value="20"/>
+        <conditional name="m">
+
+            <param label="Sequencing Method" type="select" name="sequencing_method">
+                <option value="illumina" checked="True">Illumina</option>
+                <option value="454">454 Pyrosequencing</option>
+                <option value="solid">SOLiD</option>
+            </param>
+            <when value="illumina">
+                <param label="length of reads to be simulated" name="read_length"
+                    type="integer" value="100"/>
+                <param label="amplicon sequencing simulation" name="amplicon"
+                    type="boolean" truevalue="--amplicon" falsevalue="" />
+
+                <param label="the first-read insertion rate" help="(--insRate)"
+                    name="insRate" type="float" value="0.00009" />
+                <param label="the second-read insertion rate"
+                    help="(--insRate2)" name="insRate2" type="float"
+                    value="0.00015" />
+                <param label="the first-read deletion rate" help="(--delRate)"
+                    name="delRate" type="float" value="0.00011" />
+                <param label="the second-read deletion rate"
+                    help="(--delRate2)" name="delRate2" type="float"
+                    value="0.00023" />
+            </when>
+            <when value="454">
+                <param type="boolean" label="indicate to simulate reads from the built-in GS FLX Titanium profile (-t)" name="t" truevalue="-t" falsevalue="" optional="true"  />
+                <param label="specify the number of flow cycles by the sequencer [100 for GS-FLX, 200 for GS-FLX Titanium] (-c)" name="c" type="integer" value="100" optional="true" />
+            </when>
+            <when value="solid">
+            </when>
+        </conditional>
+
+
+        <!-- Output Data Type -->
+        <conditional name="generate">
+            <param name="choice" type="select" label="Type of data to generate">
+                <option value="single_end">Single-End</option>
+                <option value="paired_end">Paired-End</option>
+                <option value="mate_pair">Mate-Pair (not with 454)</option>
+            </param>
+            <when value="single_end">
+                <conditional name="amplicon">
+                    <param name="use_amplicon" type="boolean" label="Run Amplicon Sequencing Simulation" truevalue="amplicon_true" falsevalue="amplicon_false" />
+                    <when value="amplicon_true">
+                        <param label="number of reads per amplicon (for 5'end amplicon sequencing)" name="reads_per_amplicon" type="integer" value="0"/>
+                    </when>
+                </conditional>
+            </when>
+            <when value="paired_end">
+                <param label="the average DNA fragment size for paired-end read simulation" name="fragment_size" type="integer" value="200" minimum="101" />
+                <param label="the standard deviation of the DNA fragment size for paired-end read simulation" name="fragment_sd" type="integer" value="0"/>
+
+                <conditional name="amplicon">
+                    <param name="use_amplicon" type="boolean" label="Run Amplicon Sequencing Simulation" truevalue="amplicon_true" falsevalue="amplicon_false" />
+                    <when value="amplicon_true">
+                        <param label="number of read pairs per amplicon (for two-end amplicon sequencing)" name="read_pairs_per_amplicon" type="integer" value="0"/>
+                    </when>
+                </conditional>
+            </when>
+            <when value="mate_pair">
+                <param label="Mean size of DNA/RNA fragments for mate-pair simulations" name="fragment_size" type="integer" value="200" minimum="2000" />
+                <param label="Standard deviation of DNA/RNA fragment size for paired-end simulations" name="fragment_sd" type="integer" value="10"/>
+            </when>
+        </conditional>
+
+        <!-- Output Options -->
+        <param type="boolean" label="output ALN alignment file (-a)" name="aln" truevalue="True" falsevalue="False" />
+        <param type="boolean" label="output SAM alignment file (-s)" name="sam" truevalue="True" falsevalue="False" />
+        <param label="specify a fixed random seed for the simulation" help="Set to -1 to use a random seed (-rs)" name="rndSeed" type="integer" value="-1" />
+    </inputs>
+    <outputs>
+        <data format="txt" name="output" label="Sequencing Simulation Log"/>
+        <data format="fastq" name="output_fq1"/>
+        <data format="fastq" name="output_fq2">
+            <filter>generate['choice'] != "single_end"</filter>
+        </data>
+        <data format="sam" name="output_sam">
+            <filter>sam</filter>
+        </data>
+        <data format="aln" name="output_aln1">
+            <filter>aln</filter>
+        </data>
+        <data format="aln" name="output_aln2">
+            <filter>generate['choice'] == "paired_end" and generate['amplicon']['use_amplicon'] == "amplicon_true"</filter>
+        </data>
+    </outputs>
+    <help><![CDATA[
+
+          ]]></help>
+    <tests>
+        <!-- 454 TESTS -->
+        <!--  Single End tests -->
+        <!--<test>-->
+            <!--<param name="r" value="42" />-->
+            <!--<param name="input_seq_file" value="input.fa" />-->
+            <!--<param name="fold_coverage" value="20" />-->
+            <!--<param name="choice" value="single_end" />-->
+            <!--<output name="output" file="art.454.01.report" lines_diff="6"/>-->
+            <!--<output name="output_fq1" file="art.454.01.fq" />-->
+        <!--</test>-->
+        <!--<test>-->
+            <!--<param name="r" value="42" />-->
+            <!--<param name="input_seq_file" value="input.fa" />-->
+            <!--<param name="fold_coverage" value="20" />-->
+            <!--<param name="choice" value="single_end" />-->
+            <!--<param name="sam" value="True" />-->
+            <!--<output name="output" file="art.454.01-1.report" lines_diff="10"/>-->
+            <!--<output name="output_fq1" file="art.454.01.fq" />-->
+            <!--<output name="output_sam" file="art.454.01.sam" lines_diff="2"/>-->
+        <!--</test>-->
+        <!--[> Paired End tests <]-->
+        <!--<test>-->
+            <!--<param name="r" value="42" />-->
+            <!--<param name="input_seq_file" value="input.fa" />-->
+            <!--<param name="fold_coverage" value="20" />-->
+            <!--<param name="choice" value="paired_end" />-->
+            <!--<param name="fragment_size" value="105" />-->
+            <!--<param name="fragment_sd" value="5" />-->
+            <!--<param name="sam" value="True" />-->
+            <!--<output name="output" file="art.454.02.report" lines_diff="10"/>-->
+            <!--<output name="output_fq1" file="art.454.021.fq" />-->
+            <!--<output name="output_fq2" file="art.454.022.fq" />-->
+            <!--<output name="output_sam" file="art.454.02.sam" lines_diff="2"/>-->
+        <!--</test>-->
+    </tests>
+</tool>
+

@@ -22,7 +22,9 @@
 
 <title>${title or default_title} | ${visualization_display_name}</title>
 
-${h.javascript_link( app_root + 'mergely.deps.min.js' )}
+${h.javascript_link( app_root + 'codemirror.js' )}
+${h.javascript_link( app_root + 'jquery.min.js' )}
+${h.javascript_link( app_root + 'mergely.js' )}
 ${h.stylesheet_link( app_root + 'app.deps.css' )}
 
 

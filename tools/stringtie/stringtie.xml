@@ -1,4 +1,4 @@
-<tool id="stringtie" name="StringTie" version="1.1.0">
+<tool id="stringtie" name="StringTie" version="1.1.1">
     <description>transcript assembly and quantification</description>
     <requirements>
         <requirement type="package" version="1.1.0">stringtie</requirement>
@@ -55,13 +55,13 @@ stringtie "$input_bam"
                 <param falsevalue="" help="-t" label="Disable trimming of predicted transcripts based on coverage" name="disable_trimming" truevalue="-t" type="boolean" />
                 <param falsevalue="" help="-S" label="Increase sensitivity" name="sensitive" truevalue="-S" type="boolean" />
                 <param help="-l" label="Name prefix for output transcripts" name="name_prefix" type="text" value="STRG" />
-                <param help="-f" label="Minimum isoform fraction" max="1.0" min="0.0" name="fraction" type="float" value="0.15" />
+                <param help="-f" label="Minimum isoform fraction" max="1.0" min="0.0" name="fraction" type="float" value="0.1" />
                 <param help="-m" label="Minimum assembled transcript length" name="min_tlen" type="integer" value="200" />
                 <param help="-a" label="Minimum anchor length for junctions" name="min_anchor_len" type="integer" value="10" />
                 <param help="-j" label="Minimum junction coverage" name="min_anchor_cov" type="integer" value="1" />
                 <param help="-c" label="Minimum bundle reads per bp coverage to consider for assembly" name="min_bundle_cov" type="integer" value="2" />
                 <param help="-g" label="Gap between read mappings triggering a new bundle" name="bdist" type="integer" value="50" />
-                <param help="-M" label="Fraction of bundle allowed to be covered by multi-hit reads" name="bundle_fraction" type="float" value="0.95" />
+                <param help="-M" label="Fraction of bundle allowed to be covered by multi-hit reads" name="bundle_fraction" type="float" min="0" max="1" value="0.95" />
                 <param argument="-x" type="text" value="" label="Do not assemble any transcripts on these reference sequence(s)" help="e.g. chrM,chrX" />
                 <param argument="-A" truevalue="-A" falsevalue="" type="boolean" help="" label="Additional gene abundance estimation output file" />
             </when>

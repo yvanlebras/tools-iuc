@@ -13,55 +13,53 @@
 ## Default section
 ${sec_default.allow_overlaps}
 ${sec_default.remove_duplicates}
-#if $sec_default.file_list:
-  --file-list "${sec_default.file_list}"
-#end if
+
 ${sec_default.ligate}
 #if $sec_default.min_PQ:
   --min-PQ "${sec_default.min_PQ}"
 #end if
-#if $sec_default.output:
-  --output "${sec_default.output}"
-#end if
 #if str($sec_default.select_output_type) != "__none__":
   --output-type "${sec_default.select_output_type}"
 #end if
-#set values_sec_default_regions = '","'.join([str($value) for $value in $sec_default.regions_repeat])
-#if $values_sec_default_regions:
-  --regions "${values_sec_default_regions}"
-#end if
-#if $sec_default.regions_file:
-  --regions-file "${sec_default.regions_file}"
-#end if
+
+@SEC_DEF_REGIONS@
 
 ## Primary Input/Outputs
+> $output_file
 
 </command>
   <inputs>
     <param name="input_file1" label="VCF/BCF Data" type="data" format="vcf,bcf" />
     <param name="input_file2" label="Other VCF/BCF Datasets" type="data" format="vcf,bcf" multiple="True" />
     <section name="sec_default" expanded="true" title="Default Options">
-      <param name="allow_overlaps" label="Allow Overlaps" type="boolean" truevalue="--allow-overlaps" falsevalue="" help="First coordinate of the next file can precede last record of the current file." />
-      <param name="remove_duplicates" label="Remove Duplicates" type="boolean" truevalue="--remove-duplicates" falsevalue="" help="Output only once records present in multiple files." />
-      <param name="file_list" label="File List" type="data" format="data" optional="True" help="Read the list of files from a file." />
-      <param name="ligate" label="Ligate" type="boolean" truevalue="--ligate" falsevalue="" help="Ligate phased VCFs by matching phase at overlapping haplotypes" />
-      <param name="min_PQ" label="Min Pq" type="integer" default="30" optional="True" help="Break phase set if phasing quality is lower than &lt;int&gt;" />
-      <param name="output" label="Output" type="data" format="data" optional="True" help="Write output to a file [standard output]" />
+      <param name="allow_overlaps" label="Allow Overlaps" type="boolean" truevalue="--allow-overlaps" falsevalue="" help="First coordinate of the next file can precede last record of the current file." argument="--allow-overlaps" />
+      <param name="remove_duplicates" label="Remove Duplicates" type="boolean" truevalue="--remove-duplicates" falsevalue="" help="Output only once records present in multiple files." argument="--remove-duplicates"/>
+      <param name="ligate" label="Ligate" type="boolean" truevalue="--ligate" falsevalue="" help="Ligate phased VCFs by matching phase at overlapping haplotypes" argument="--ligate"/>
+      <param name="min_PQ" label="Min PQ" type="integer" default="30" optional="True" help="Break phase set if phasing quality is lower than &lt;int&gt;" argument="--min-PQ" />
       <expand macro="macro_select_output_type" />
       <expand macro="macro_regions" />
     </section>
   </inputs>
   <outputs>
     <data name="output_file" format="vcf">
-      <change_format>
-        <when input="sec_default|select_output_type" value="b" format="bcf_bgz" />
-        <when input="sec_default|select_output_type" value="u" format="bcf" />
-        <when input="sec_default|select_output_type" value="z" format="vcf_bgz" />
-        <when input="sec_default|select_output_type" value="v" format="vcf" />
-      </change_format>
+      <expand macro="sec_def_output_type" />
     </data>
   </outputs>
   <tests />
-  <help>Concatenate or combine VCF/BCF files. All source files must have the same sample columns appearing in the same order. Can be used, for example, to concatenate chromosome VCFs into one VCF, or combine a SNP VCF and an indel VCF into one. The input files must be sorted by chr and position. The files must be given in the correct order to produce sorted VCF on output unless the -a, --allow-overlaps option is specified.</help>
+  <help><![CDATA[
+bcftools concat
+===============
+
+Concatenate or combine VCF/BCF files. All source files must have the same
+sample columns appearing in the same order. Can be used, for example, to
+concatenate chromosome VCFs into one VCF, or combine a SNP VCF and an
+indel VCF into one. The input files must be sorted by chr and position.
+The files must be given in the correct order to produce sorted VCF on
+output unless the -a, --allow-overlaps option is specified.
+
+
+@OUTPUT_TYPE_HELP@
+@REGIONS_HELP@
+  ]]></help>
   <expand macro="citations" />
 </tool>

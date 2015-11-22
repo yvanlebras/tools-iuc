@@ -78,4 +78,50 @@
       <option value="b">compressed BCF</option>
     </param>
   </xml>
+  <xml name="sec_def_output_type">
+    <change_format>
+      <when input="sec_default|select_output_type" value="b" format="bcf_bgz" />
+      <when input="sec_default|select_output_type" value="u" format="bcf" />
+      <when input="sec_default|select_output_type" value="z" format="vcf_bgz" />
+      <when input="sec_default|select_output_type" value="v" format="vcf" />
+    </change_format>
+  </xml>
+  <token name="@REGIONS_HELP@">
+      <![CDATA[
+Output Type
+-----------
+
+Output compressed BCF (b), uncompressed BCF (u), compressed
+VCF (z), uncompressed VCF (v). Use the uncompressed BCF
+option when piping between bcftools subcommands to speed up
+performance by removing unecessary compression/decompression
+and VCF<->BCF conversion.
+
+This Galaxy tool recommends using the compressed BCF format
+as piping is not implemented, and uncompressed data would
+use unnecessary amounts of space.
+
+]]></token>
+  <token name="@REGIONS_HELP@">
+      <![CDATA[
+Region Selections
+-----------------
+
+Regions can be specified in a VCF,
+BED, or tab-delimited file (the default). The columns of the
+tab-delimited file are: CHROM, POS, and, optionally, POS_TO,
+where positions are 1-based and inclusive. Uncompressed
+files are stored in memory, while bgzip-compressed and
+tabix-indexed region files are streamed. Note that sequence
+names must match exactly, "chr20" is not the same as "20".
+Also note that chromosome ordering in FILE will be
+respected, the VCF will be processed in the order in which
+chromosomes first appear in FILE. However, within
+chromosomes, the VCF will always be processed in ascending
+genomic coordinate order no matter what order they appear in
+FILE. Note that overlapping regions in FILE can result in
+duplicated out of order positions in the output. This option
+requires indexed VCF/BCF files.
+
+]]></token>
 </macros>

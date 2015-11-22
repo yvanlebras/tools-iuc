@@ -25,6 +25,12 @@ ${sec_default.ligate}
 @SEC_DEF_REGIONS@
 
 ## Primary Input/Outputs
+$input_file1
+
+#for file in $input_file2:
+    $input_file2
+#end for
+
 > $output_file
 
 </command>
@@ -45,7 +51,33 @@ ${sec_default.ligate}
       <expand macro="sec_def_output_type" />
     </data>
   </outputs>
-  <tests />
+  <tests>
+    <test>
+      <param name="input_file1" value="concat.1.a.bcf" />
+      <param name="input_file2" value="concat.1.b.bcf" />
+      <output name="output_file" file="concat.1.bcf.out" lines_diff="6"/>
+    </test>
+    <test>
+      <param name="input_file1" value="concat.2.a.bcf" />
+      <param name="input_file2" value="concat.2.b.bcf" />
+      <param name="allow_overlaps" value="--allow-overlaps" />
+      <output name="output_file" file="concat.2.bcf.out" lines_diff="6"/>
+    </test>
+    <test>
+    <param/>
+      <param name="input_file1" value="concat.3.a.bcf" />
+      <param name="input_file2" value="concat.3.b.bcf concat.3.0.bcf concat.3.c.bcf concat.3.d.bcf concat.3.e.bcf concat.3.f.bcf" />
+      <param name="ligate" value="--ligate" />
+      <output name="output_file" file="concat.3.bcf.out" lines_diff="6"/>
+    </test>
+    <test>
+      <param name="input_file1" value="concat.2.a.bcf" />
+      <param name="input_file2" value="concat.2.b.bcf" />
+      <param name="allow_overlaps" value="--allow-overlaps" />
+      <param name="remove_duplicates" value="--remove-duplicates" />
+      <output name="output_file" file="concat.4.bcf.out" lines_diff="6"/>
+    </test>
+  </tests>
   <help><![CDATA[
 bcftools concat
 ===============

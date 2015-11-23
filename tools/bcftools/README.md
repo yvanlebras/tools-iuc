@@ -12,10 +12,23 @@ of all of them included in the "isec" tool,) please feel free to file an issue.
 - Galaxy needs datatypes for bcf and vcf files, block-gzipped and uncompressed.
 - Galaxy needs to automatically index those files with tabix
 
-## "Complete" Wrappers
+## Status
 
 The wrappers were automatically generated in bulk. That doesn't get them 100%
 of the way there (e.g. meaningful test cases), so the rest of the process is a
 bit slower.
 
-- bcftools call
+- [ ] annotate
+- [x] call
+- [x] concat
+- [x] consensus
+- [x] filter
+- [ ] gtcheck (need tests, other improvements)
+- [x] isec
+- [ ] merge
+- [ ] norm
+- [ ] query
+- [ ] reheader
+- [ ] roh
+- [ ] stats
+- [ ] view

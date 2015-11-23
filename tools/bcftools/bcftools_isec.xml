@@ -8,7 +8,7 @@
   <expand macro="requirements" />
   <expand macro="stdio" />
   <expand macro="version_command" />
-  <command>bcftools @EXECUTABLE@
+  <command><![CDATA[bcftools @EXECUTABLE@
 
 ## Default section
 #if $sec_default.collapse:
@@ -18,18 +18,16 @@ ${sec_default.complement}
 #if $sec_default.exclude:
   --exclude "${sec_default.exclude}"
 #end if
+#if $sec_default.include:
+  --include "${sec_default.include}"
+#end if
+
 #set values_sec_default_apply_filters = '","'.join([str($value) for $value in $sec_default.apply_filters_repeat])
 #if $values_sec_default_apply_filters:
   --apply-filters "${values_sec_default_apply_filters}"
 #end if
-#if $sec_default.include:
-  --include "${sec_default.include}"
-#end if
 #if $sec_default.nfiles:
   --nfiles "${sec_default.nfiles}"
-#end if
-#if $sec_default.output:
-  --output "${sec_default.output}"
 #end if
 #if str($sec_default.select_output_type) != "__none__":
   --output-type "${sec_default.select_output_type}"
@@ -37,58 +35,105 @@ ${sec_default.complement}
 #if $sec_default.prefix:
   --prefix "${sec_default.prefix}"
 #end if
-#set values_sec_default_regions = '","'.join([str($value) for $value in $sec_default.regions_repeat])
-#if $values_sec_default_regions:
-  --regions "${values_sec_default_regions}"
-#end if
-#if $sec_default.regions_file:
-  --regions-file "${sec_default.regions_file}"
-#end if
-#set values_sec_default_targets = '","'.join([str($value) for $value in $sec_default.targets_repeat])
-#if $values_sec_default_targets:
-  --targets "${values_sec_default_targets}"
-#end if
-#if $sec_default.targets_file:
-  --targets-file "${sec_default.targets_file}"
-#end if
+
+@SEC_DEF_REGIONS@
+@SEC_DEF_TARGETS@
+
 #set values_sec_default_write = '","'.join([str($value) for $value in $sec_default.write_repeat])
 #if $values_sec_default_write:
   --write "${values_sec_default_write}"
 #end if
 
 ## Primary Input/Outputs
+$input_file1
+#for file in $input_file2:
+    $file
+#end for
 
+>
+$output_file
+]]>
 </command>
   <inputs>
     <param name="input_file1" label="VCF/BCF Data" type="data" format="vcf,bcf" />
     <param name="input_file2" label="Other VCF/BCF Datasets" type="data" format="vcf,bcf" multiple="True" />
     <section name="sec_default" expanded="true" title="Default Options">
       <expand macro="macro_collapse" />
-      <param name="complement" label="Complement" type="boolean" truevalue="--complement" falsevalue="" help="output positions present only in the first file but missing in the others" />
-      <param name="exclude" label="Exclude" __TODO__="TODO" help="exclude sites for which the expression is true" />
+      <param name="complement" label="Complement" type="boolean" truevalue="--complement" falsevalue=""
+          help="output positions present only in the first file but missing in the others" />
+
+      <expand macro="macro_exclude" />
       <expand macro="macro_apply_filters_repeat" />
-      <param name="include" label="Include" __TODO__="TODO" help="include only sites for which the expression is true" />
-      <param name="nfiles" label="Nfiles" type="integer" optional="True" help="output positions present in this many (=), this many or more (+), or this many or fewer (-) files" />
+      <expand macro="macro_include" />
+
+      <param name="nfiles" label="Nfiles" type="integer" optional="True"
+          help="output positions present in this many (=), this many or more (+), or this many or fewer (-) files">
+          <validator type="regex" message="Must be one of (=, +, -) and then an integer">^[=+-][0-9]+$</validator>
+      </param>
+
       <expand macro="macro_select_output_type" />
-      <param name="prefix" label="Prefix" __TODO__="TODO" help="if given, subset each of the input files accordingly, see also -w" />
       <expand macro="macro_regions" />
       <expand macro="macro_targets" />
-      <repeat name="write_repeat" title="Write">
-        <param name="write" label="Write" help="list of files to write with -p given as 1-based indexes. By default, all files are written" />
-      </repeat>
+      <!-- Missing -p, -w -->
     </section>
   </inputs>
   <outputs>
     <data name="output_file" format="vcf">
-      <change_format>
-        <when input="sec_default|select_output_type" value="b" format="bcf_bgz" />
-        <when input="sec_default|select_output_type" value="u" format="bcf" />
-        <when input="sec_default|select_output_type" value="z" format="vcf_bgz" />
-        <when input="sec_default|select_output_type" value="v" format="vcf" />
-      </change_format>
+      <expand macro="sec_def_output_type" />
     </data>
   </outputs>
-  <tests />
-  <help>Create intersections, unions and complements of VCF files.</help>
+  <tests>
+    <test>
+      <param name="nfiles" value="=2" />
+      <param name="input_file1" value="isec.a.vcf.gz" />
+      <param name="input_file2" value="isec.b.vcf.gz" />
+      <output name="output_file" file="isec.ab.out" lines_diff="2" />
+    </test>
+    <test>
+      <param name="nfiles" value="=2" />
+      <param name="input_file1" value="isec.a.vcf.gz" />
+      <param name="input_file2" value="isec.b.vcf.gz" />
+      <param name="include" value="STRLEN(REF)==2" />
+      <output name="output_file" file="isec.ab.flt.out" lines_diff="2" />
+    </test>
+    <test>
+      <param name="nfiles" value="=2" />
+      <param name="input_file1" value="isec.a.vcf.gz" />
+      <param name="input_file2" value="isec.b.vcf.gz" />
+      <param name="collapse" value="both" />
+      <output name="output_file" file="isec.ab.both.out" lines_diff="2" />
+    </test>
+    <test>
+      <param name="nfiles" value="=2" />
+      <param name="input_file1" value="isec.a.vcf.gz" />
+      <param name="input_file2" value="isec.b.vcf.gz" />
+      <param name="collapse" value="any" />
+      <output name="output_file" file="isec.ab.any.out" lines_diff="2" />
+    </test>
+    <test>
+      <param name="input_file1" value="isec.a.vcf.gz" />
+      <param name="input_file2" value="isec.b.vcf.gz" />
+      <param name="complement" value="--complement" />
+      <param name="collapse" value="any" />
+      <output name="output_file" file="isec.ab.C.out" lines_diff="2" />
+    </test>
+    <test>
+      <param name="input_file1" value="isec.a.vcf.gz" />
+      <param name="targets" value="isec.tab.gz" />
+      <output name="output_file" file="isec.tab.out" lines_diff="2" />
+    </test>
+  </tests>
+  <help>
+bcftools isec
+=============
+
+Create intersections, unions and complements of VCF files.
+
+
+@EXPRESSIONS_HELP@
+@REGIONS_HELP@
+@TARGETS_HELP@
+@OUTPUT_HELP@
+</help>
   <expand macro="citations" />
 </tool>

@@ -8,7 +8,7 @@
   <expand macro="requirements" />
   <expand macro="stdio" />
   <expand macro="version_command" />
-  <command>bcftools @EXECUTABLE@
+  <command><![CDATA[bcftools @EXECUTABLE@
 
 ## Default section
 #if $sec_default.exclude:
@@ -26,67 +26,115 @@
 #if $sec_default.mode:
   --mode "${sec_default.mode}"
 #end if
-#if $sec_default.output:
-  --output "${sec_default.output}"
-#end if
 #if str($sec_default.select_output_type) != "__none__":
   --output-type "${sec_default.select_output_type}"
 #end if
-#set values_sec_default_regions = '","'.join([str($value) for $value in $sec_default.regions_repeat])
-#if $values_sec_default_regions:
-  --regions "${values_sec_default_regions}"
-#end if
-#if $sec_default.regions_file:
-  --regions-file "${sec_default.regions_file}"
-#end if
+
+@SEC_DEF_REGIONS@
+
 #if $sec_default.soft_filter:
   --soft-filter "${sec_default.soft_filter}"
 #end if
 #if str($sec_default.select_set_GTs) != "__none__":
   --set-GTs "${sec_default.select_set_GTs}"
 #end if
-#set values_sec_default_targets = '","'.join([str($value) for $value in $sec_default.targets_repeat])
-#if $values_sec_default_targets:
-  --targets "${values_sec_default_targets}"
-#end if
-#if $sec_default.targets_file:
-  --targets-file "${sec_default.targets_file}"
-#end if
+
+@SEC_DEF_TARGETS@
 
 ## Primary Input/Outputs
 
 $input_file
-&gt;
-$output_file</command>
+>
+$output_file]]></command>
   <inputs>
     <param name="input_file" label="VCF/BCF Data" type="data" format="vcf,bcf" />
     <section name="sec_default" expanded="true" title="Default Options">
+      <!-- TODO: ensure expressions are valid here -->
       <expand macro="macro_exclude" />
-      <param name="SnpGap" label="Snpgap" type="integer" optional="True" help="filter SNPs within &lt;int&gt; base pairs of an indel" />
-      <param name="IndelGap" label="Indelgap" type="integer" optional="True" help="filter clusters of indels separated by &lt;int&gt; or fewer base pairs allowing only one to pass" />
-      <param name="include" label="Include" __TODO__="TODO" help="include only sites for which the expression is true (see man page for details" />
-      <param name="mode" label="Mode" __TODO__="TODO" help="&quot;+&quot;: do not replace but add to existing FILTER; &quot;x&quot;: reset filters at sites which pass" />
+
+      <param name="SnpGap" label="Snpgap" type="integer" optional="True"
+          help="filter SNPs within &lt;int&gt; base pairs of an indel" />
+      <param name="IndelGap" label="Indelgap" type="integer" optional="True"
+          help="filter clusters of indels separated by &lt;int&gt; or fewer base pairs allowing only one to pass" />
+
+      <param name="include" label="Include only sites for which the expression is true" type="text"
+          argument="--include" optional="True" help="See 'Expressions' in the help text for usage"/>
+
+      <param name="mode" label="Filter Mode" type="select" multiple="True">
+        <option value="+">Do not replace, but add to existing FILTER</option>
+        <option value="x">Reset filters at sites which pass</option>
+      </param>
+
       <expand macro="macro_select_output_type" />
       <expand macro="macro_regions" />
       <param name="soft_filter" label="Soft Filter" type="string" optional="True" help="annotate FILTER column with &lt;string&gt; or unique filter name (&quot;Filter%d&quot;) made up by the program (&quot;+&quot;)" />
       <param name="select_set_GTs" type="select">
         <option value="__none__" selected="True">No selection</option>
-        <option value="set genotypes of failed samples to missing (.) or ref (0)" />
+        <option value=".">set genotypes of failed samples to missing (.)</option>
+        <option value="0">set genotypes of failed samples to reference (0)</option>
       </param>
       <expand macro="macro_targets" />
     </section>
   </inputs>
   <outputs>
     <data name="output_file" format="vcf">
-      <change_format>
-        <when input="sec_default|select_output_type" value="b" format="bcf_bgz" />
-        <when input="sec_default|select_output_type" value="u" format="bcf" />
-        <when input="sec_default|select_output_type" value="z" format="vcf_bgz" />
-        <when input="sec_default|select_output_type" value="v" format="vcf" />
-      </change_format>
+      <expand macro="sec_def_output_type" />
     </data>
   </outputs>
-  <tests />
-  <help>Apply fixed-threshold filters.</help>
+  <tests>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="select_set_GTs" value="." />
+      <param name="exclude" value='TXT0="text"' />
+      <output name="output_file" file="view.filter.6.out"/>
+    </test>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="select_set_GTs" value="." />
+      <param name="exclude" value='FMT/FRS[1]="BB"' />
+      <output name="output_file" file="view.filter.7.out"/>
+    </test>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="select_set_GTs" value="." />
+      <param name="exclude" value='FMT/FGS[0]="AAAAAA"' />
+      <output name="output_file" file="view.filter.8.out"/>
+    </test>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="select_set_GTs" value="." />
+      <param name="exclude" value='FMT/FGS[1]="BBB"' />
+      <output name="output_file" file="view.filter.9.out"/>
+    </test>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="select_set_GTs" value="." />
+      <param name="exclude" value='FMT/FGS[4]="EE"' />
+      <output name="output_file" file="view.filter.10.out"/>
+    </test>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="select_set_GTs" value="." />
+      <param name="exclude" value='FMT/STR="XX"' />
+      <output name="output_file" file="view.filter.11.out"/>
+    </test>
+    <test>
+      <param name="input_file" value="view.filter.vcf" />
+      <param name="mode" value="x" />
+      <param name="SnpGap" value="2" />
+      <param name="IndelGap" value="2" />
+      <output name="output_file" file="filter.1.out"/>
+    </test>
+  </tests>
+  <help>
+bcftools filter
+===============
+
+Apply fixed-threshold filters.
+
+@EXPRESSIONS_HELP@
+@REGIONS_HELP@
+@TARGETS_HELP@
+</help>
   <expand macro="citations" />
 </tool>

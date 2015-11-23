@@ -24,7 +24,10 @@
     </citations>
   </xml>
   <xml name="macro_exclude">
-    <param name="exclude" label="Exclude" help="exclude sites for which the expression is true (see man page for details)" />
+    <param name="exclude" label="Exclude sites for which the expression is true" help="See 'Expressions' in the help text for usage" />
+  </xml>
+  <xml name="macro_include">
+    <param name="include" label="Include sites for which the expression is true" help="See 'Expressions' in the help text for usage" />
   </xml>
   <xml name="macro_collapse">
       <param name="collapse" label="Collapse" type="select" optional="True" help="Controls how to treat records with duplicate positions and defines compatible records across multiple input files">
@@ -36,6 +39,48 @@
         <option value="none" selected="True">None</option>
     </param>
   </xml>
+  <token name="@COLLAPSE_HELP@">
+Collapse
+--------
+
+Controls how to treat records with duplicate positions and defines compatible
+records across multiple input files. Here by "compatible" we mean records which
+should be considered as identical by the tools. For example, when performing
+line intersections, the desire may be to consider as identical all sites with
+matching positions (bcftools isec -c all), or only sites with matching variant
+type (bcftools isec -c snps  -c indels), or only sites with all alleles
+identical (bcftools isec -c none).
+
+
++------------+----------------------------------------------------------------+
+| Flag value | Result                                                         |
++============+================================================================+
+| none       | only records with identical REF and ALT alleles are compatible |
++------------+----------------------------------------------------------------+
+| some       | only records where some subset of ALT alleles match are        |
+|            | compatible                                                     |
++------------+----------------------------------------------------------------+
+| all        | all records are compatible, regardless of whether the ALT      |
+|            | alleles match or not. In the case of records with the same     |
+|            | position, only the first wil lbe considered and appear on      |
+|            | output.                                                        |
++------------+----------------------------------------------------------------+
+| snps       | any SNP records are compatible, regardless of whether the ALT  |
+|            | alleles match or not. For duplicate positions, only the first  |
+|            | SNP record will be considered and appear on output.            |
++------------+----------------------------------------------------------------+
+| indels     | all indel records are compatible, regardless of whether the    |
+|            | REF and ALT alleles match or not. For duplicate positions,     |
+|            | only the first indel record will be considered and appear on   |
+|            | output.                                                        |
++------------+----------------------------------------------------------------+
+| both       | abbreviation of "-c indels  -c snps"                           |
++------------+----------------------------------------------------------------+
+| id         | only records with identical ID column are compatible.          |
+|            | Supportedby bcftools merge only.                               |
++------------+----------------------------------------------------------------+
+
+  </token>
   <xml name="macro_apply_filters_repeat">
     <repeat name="apply_filters_repeat" title="Apply Filters">
       <param name="apply_filters" label="Apply Filters" help="require at least one of the listed FILTER strings (e.g. &quot;PASS,.&quot;)" />
@@ -86,7 +131,7 @@
       <when input="sec_default|select_output_type" value="v" format="vcf" />
     </change_format>
   </xml>
-  <token name="@REGIONS_HELP@">
+  <token name="@OUTPUT_HELP@">
       <![CDATA[
 Output Type
 -----------
@@ -122,6 +167,152 @@ genomic coordinate order no matter what order they appear in
 FILE. Note that overlapping regions in FILE can result in
 duplicated out of order positions in the output. This option
 requires indexed VCF/BCF files.
+
+]]></token>
+  <token name="@TARGETS_HELP@"><![CDATA[
+Targets
+-------
+
+Similar to regions, but the next position is accessed by streaming the whole
+VCF/BCF rather than using the tbi/csi index. Both regions and targets options can be
+applied simultaneously: regions uses the index to jump to a region and targets discards
+positions which are not in the targets. Unlike regions, targets can be prefixed with
+"^" to request logical complement. For example, "^X,Y,MT" indicates that
+sequences X, Y and MT should be skipped. Yet another difference between the two
+is that regions checks both start and end positions of indels, whereas targets checks
+start positions only.
+
+For the bcftools call command, with the option -C alleles, third column of the
+targets file must be comma-separated list of alleles, starting with the
+reference allele. Note that the file must be compressed and index. Such a file
+can be easily created from a VCF using::
+
+    bcftools query -f'%CHROM\t%POS\t%REF,%ALT\n' file.vcf | bgzip -c > als.tsv.gz && tabix -s1 -b2 -e2 als.tsv.gz
+      ]]>
+      <!-- TODO: galaxy-ify -->
+  </token>
+  <token name="@EXPRESSIONS_HELP@">
+      <![CDATA[
+Expressions
+-----------
+
+Valid expressions may contain:
+
+-  numerical constants, string constants
+
+   ::
+
+      1, 1.0, 1e-4
+      "String"
+
+-  arithmetic operators
+
+   ::
+
+      +,*,-,/
+
+-  comparison operators
+
+   ::
+
+      == (same as =), >, >=, <=, <, !=
+
+-  regex operators "~" and its negation "!~"
+
+   ::
+
+      INFO/HAYSTACK ~ "needle"
+
+-  parentheses
+
+   ::
+
+      (, )
+
+-  logical operators
+
+   ::
+
+      && (same as &), ||,  |
+
+-  INFO tags, FORMAT tags, column names
+
+   ::
+
+      INFO/DP or DP
+      FORMAT/DV, FMT/DV, or DV
+      FILTER, QUAL, ID, REF, ALT[0]
+
+-  1 (or 0) to test the presence (or absence) of a flag
+
+   ::
+
+      FlagA=1 && FlagB=0
+
+-  "." to test missing values
+
+   ::
+
+      DP=".", DP!=".", ALT="."
+
+-  missing genotypes can be matched regardless of phase and ploidy (".|.", "./.", ".") using this expression
+
+   ::
+
+      GT="."
+
+-  TYPE for variant type in REF,ALT columns (indel,snp,mnp,ref,other)
+
+   ::
+
+      TYPE="indel" | TYPE="snp"
+
+-  array subscripts, "*" for any field
+
+   ::
+
+      (DP4[0]+DP4[1])/(DP4[2]+DP4[3]) > 0.3
+      DP4[*] == 0
+      CSQ[*] ~ "missense_variant.*deleterious"
+
+-  function on FORMAT tags (over samples) and INFO tags (over vector fields)
+
+   ::
+
+      MAX, MIN, AVG, SUM, STRLEN, ABS
+
+-  variables calculated on the fly if not present: number of alternate alleles; number of samples; count of alternate alleles; minor allele count (similar to AC but is always smaller than 0.5); frequency of alternate alleles (AF=AC/AN); frequency of minor alleles (MAF=MAC/AN); number of alleles in called genotypes
+
+   ::
+
+      N_ALT, N_SAMPLES, AC, MAC, AF, MAF, AN
+
+**Notes:**
+
+-  String comparisons and regular expressions are case-insensitive
+-  If the subscript "*" is used in regular expression search, the whole field
+   is treated as one string. For example, the regex ``STR[*]~"B,C"`` will be
+   true for the string vector INFO/STR=AB,CD.
+-  Variables and function names are case-insensitive, but not tag names. For
+   example, "qual" can be used instead of "QUAL", "strlen()" instead of
+   "STRLEN()" , but not "dp" instead of "DP".
+
+**Examples:**
+
+   ::
+
+      MIN(DV)>5
+      MIN(DV/DP)>0.3
+      MIN(DP)>10 & MIN(DV)>3
+      FMT/DP>10  & FMT/GQ>10 .. both conditions must be satisfied within one sample
+      FMT/DP>10 && FMT/GQ>10 .. the conditions can be satisfied in different samples
+      QUAL>10 |  FMT/GQ>10   .. selects only GQ>10 samples
+      QUAL>10 || FMT/GQ>10   .. selects all samples at QUAL>10 sites
+      TYPE="snp" && QUAL>=10 && (DP4[2]+DP4[3] > 2)
+      MIN(DP)>35 && AVG(GQ)>50
+      ID=@file       .. selects lines with ID present in the file
+      ID!=@~/file    .. skip lines with ID present in the ~/file
+      MAF[0]<0.05    .. select rare variants at 5% cutoff
 
 ]]></token>
 </macros>

@@ -1,0 +1,181 @@
+Stacks 2.2 - Aug 22, 2018
+--------------------------
+    Feature: Added the --bestrad flag to process_radtags. When used it will look for reads that need transposed
+             before they are processed.
+    Feature: gstacks: New option --max-debrujin-reads to control the construction of the de Bruijn graph; replaces 
+             --min-kmer-freq which is now deprecated
+    Bugfix: Added run number to output FASTQ headers in process_radtags to make sure read IDs are always unique.
+
+Stacks 2.1 - June 25, 2018
+--------------------------
+    Bugfix: Fixed a performance regression in sstacks. Recent changes in sstacks made it more likely to
+            invoke the gapped algorithm to match to the catalog. In some cases, matches to the catalog
+            would be marked as ambiguous alignments and dropped from the next stages of analysis due to 
+            differences in CIGAR strings from the gapped alignment. 
+    Feature: ustacks Changed --high_cov_thres default value from 2.0 to 3.0.
+    Feature: gstacks: Changed --min-kmer-freq default value from 0.05 to 0.01.
+    Feature: Added further checks on zlib calls.
+
+Stacks 2.0 - Apr 23, 2018
+-------------------------
+    Feature: modified cstacks and ustacks gapped alignment algorithms to always align the two stacks/alleles
+             with the most k-mers in common, removed the previous minimum k-mer limit.
+    Feature: modified cstacks so that when a sample locus matches two or more catalog loci, those catalog
+             loci are combined, or rolled-up, reducing undermerged loci that generate excess homozygote calls.
+    Feature: modified tsv2bam so that when two loci from the same sample match the same catalog locus, those
+             loci are combined.
+    Bugfix: corrected BbvCI restriction enzyme to add the missing negative strand sequence.
+    Bugfix: corrected the catalog writing routines for unzipped output files to include missing column.
+    Bugfix: populations: Fixed the filtering of monomorphic loci.
+    Bugfix: populations: Now preserving sample ordering in all outputs.
+    Bugfix: Fixed ICPC compilation.
+
+    2.0b - May 1, 2018
+    Feature: gstacks: Removed the assertion that the first basepair of each locus should
+             be part of a cutsite (now a warning).
+    Feature: gstacks: The reported effective coverage is now a more realistic weighted mean.
+    Bugfix: populations: Fixed STRUCTURE output being corrupted for some unordereds population maps.
+
+Stacks 2.0 Beta 10 - Apr 10, 2018
+---------------------------------
+    Feature: Improved gapped alignment for secondary reads in ustacks.
+    Feature: Improved populations performance.
+    Feature: Added enzymes Cac8I, MslI.
+    Feature: Made population maps more tolerant to spurious extra spaces and lines.
+    Feature: populations: VCF output: changed the format of the catalog locus field and made the column 1-based.
+    Feature: gstacks: increased haplotyping rates by adding a filtering of spurious SNPs step.
+    Bugfix:  Fixed populations dramatric slow-down on datasets with more than several hundred samples.
+    Bugfix:  Restored the NS/locus distribution in populations's distributions log.
+    Bugfix:  Fixed the populations --radpainter export.
+    Bugfix:  stacks-dist-extract: Fixed OSX compatibility.
+    Bugfix:  Fixed breaking bug in populations --in-vcf mode filtering statistics.
+
+Stacks 2.0 Beta 9 - Mar 12, 2018
+--------------------------------
+    Feature: Cleaned up tags/snps/alleles/matches files. We removed the batch ID from ustacks and cstacks
+             output, and the deprecated log likelihood fields from ustacks and cstacks. We also removed
+             the chromosome/bp/strand fields as they are no longer used in these files.
+    Feature: Renamed gstacks output files that represent the new components of the catalog:
+               gstacks.fa.gz => catalog.fa.gz; gstacks.vcf.gz => catalog.calls
+    Feature: Removed read length restrictions from ustacks/cstacks/sstacks core, reads/loci can vary in
+             length throughout the pipeline.
+    Feature: Reimplemented PLINK export format for the populations program.
+    Bugfix: Updated to HTSLib 1.7; changed to a custom build system that will work with the Stacks build
+            system.
+    Bugfix: Made gapped alignments mandatory in ustacks, cstacks, and sstacks. Added check for frameshift
+            at 3' end of the read -- if found, a match is deferred to the gapped aligner.
+
+Stacks 2.0 Beta 8 - Feb 03, 2018
+--------------------------------
+    Feature: populations: Now calculated deviation from Hardy-Weinberg equilibrium at the SNP level
+             (using an exact test), and at the haplotype level (using Guo+Thompson's MCMC algorithm).
+    Feature: populations: Added an export type for FineRADStructure.
+    Feature: populations: Added the GQ/GL fields in the VCF SNPs output.
+    Feature: gstacks: Made the default behavior regarding paired-end reads more logical (in
+             reference-based mode --paired has been replaced with --unpaired).
+    Feature: gstacks: Added details about samples and coverages to the log outputs.
+    Feautre: Added enzymes NspI, BbvCI, fixed BfuCI.
+    Bugfix:  corrected a major performance bottleneck in populations when smoothing population statistics
+             across the genome.
+    Bugfix:  populations: The VCF output now preserves the input sample order.
+    Bugfix:  gstacks: Fixed the handling of a rare special case in the PCR duplicates code.
+    Bugfix:  gstacks: Fixed 100% being added to all per-thread timings.
+
+Stacks 2.0 Beta 7 - Dec 29, 2017
+--------------------------------
+    Feature: gstacks: Added an option to remove PCR duplicates based on insert
+             size (--rm-pcr-duplicates, plus the related --rm-unpaired-reads).
+    Feature: populations: Added a haplotype Genepop export.
+    Feature: populations: improved the help; changed the output names for SNP
+             files to 'populations.snps.EXT'; added option --no_hap_exports.
+    Feature: gstacks and populations: Clarified the logs; moved distributions
+             to a separate '.xlog' file and added script stacks-xlog-extract.
+    Feature: gstacks: Tweaked the help/interface; especially, replaced --spacer
+             with --suffix (for BAM directory input).
+    Feature: Added enzymes BfuI and HinP1.
+    Feature: Added option --inline_null to clone_filter.
+    Bugfix: gstacks: Fixed a typo preventing the paired reads from being merged.
+    Bugfix: populations: Fixed a segfault that occurred with some large datasets.
+    Bugfix: Made VCF outputs more standard compliant.
+    Bugfix: populations: Repaired --fasta_samples and --fasta_samples_raw.
+    Bugfix: populations: Fixed population aborting at the end of the run
+            when an export option was specified multiple times.
+    Bugfix: gstacks: Adjusted progression report for catalog asymmetry.
+    Bugfix: Fixed installation of stacks-integrate-alignments on MacOS.
+
+Stacks 2.0 Beta 6 - Dec 02, 2017
+--------------------------------
+    Feature: Implmented the VCF haplotypes output.
+    Bugfix:  Corrected asset failure in populations when exporting data for genepop or structure output.
+
+Stacks 2.0 Beta 5 - Nov 27, 2017
+--------------------------------
+    Feature: Reimplemented structure, phylip, and phylip_var exports.
+    Bugfix: Tightened up the overlap algorithm to require 80% of overlapping sequence to be
+            aligned and of the aligned sequence, 80% must be identities.
+    Bugfix: Fixed segfault in gstacks when compiled with CLANG on OS X.
+    Bugfix: gstacks: Fixed how misphasings are reported.
+
+Stacks 2.0 Beta 4 - Nov 07, 2017
+--------------------------------
+    Bugfix: Continued improving overlap algorithm to join SE and PE contigs.
+    Bugfix: Improved build system to handle new timing functions in gstacks.
+
+Stacks 2.0 Beta 3 - Nov 01, 2017
+--------------------------------
+    Feature: Added output to populations describing mean PE contig size and mean number of
+             genotyped sites per locus, which reflects the current filtering paramters.
+    Feature: Improved the output of gstacks and populations.
+    Feature: Added script `stacks-integrate-alignments`.
+    Bugfix: made further improvements to the single-end/paired-end locus overlapping algorithm.
+    Bugfix: fixed all depths being null in populations' VCF output.
+    Bugfix: Numerically tweaked the marukilow model to remove a limit case.
+
+Stacks 2.0 Beta 2 - Oct 19, 2017
+--------------------------------
+    Feature: gstacks: Made it possible to read from multiple BAM files at the same time; modified the
+             interface accordingly.
+    Feature: gstacks: Parallelized the reference-based mode.
+    Feature: gstacks: Added various statistics & improvements to the log output.
+    Feature: gstacks: Improved how the forward & paired-end reads are merged (in denovo mode; no more trimming).
+    Feature: populations: Added code to calculate the overlap between RAD loci when a reference is available.
+    Feature: populations: Added VCF ouput (--vcf).
+    Feature: Updated the denovo_map.pl and ref_map.pl wrappers, samples must now be specified using --samples and --popmap.
+    Bugfix: Fixed three memory leaks in populations; improved reference-aligned batch logic.
+    Bugfix: Improved overlapping code in gstacks to merge more single and paired-end contigs together.
+    Bugfix: Now compiles on Apple OS X.
+    Bugfix: Fixed a bug that skewed the fixed-site (no-SNP) likelihood in the marukilow model.
+
+Stacks 2.0 Beta 1 - Oct 09, 2017
+--------------------------------
+    Feature: Paired-end sequencing data can be utilized fully. In particular, when the shearing-based
+             protocol is used, the software will assemble a local contig from the paired reads across
+             the population, possibly overlap it with the forward-reads region, then align all reads to the
+             assembled contig. This new approach also fully supports double-digest protocols.
+    Feature: Haplotype calling and diploidy-violation dectection now rely on a novel, more powerful algorithm.
+    Feature: SNP and genotype-calling now uses the diploid models of Maruki and Lynch (2017).
+    Feature: The rxstacks program has been replaced with the gstacks program, and there is no need to re-run
+	     some of the earlier steps of the pipeline anymore.
+    Feature: The memory footprint of the populations program has been considerably reduced and can be scaled
+	     for any size data set.
+    Feature: The reference-based pipeline has been simplified, and now only comprises two steps: gstacks and populations.
+    Feature: Added --null_inline mode to clone_filter (and process_radtags) for previously unseen type
+             of oligo combination.
+
+Stacks 1.48 - Nov 20, 2017
+---------------------------
+    Feature: Added HinP1I restriction enzyme.
+    Feature: Added --null_inline mode to clone_filter (and process_radtags) for previously unseen type
+             of oligo combination.
+
+Stacks 1.47 - Sept 06, 2017
+---------------------------
+    Feature: Improved populations's fasta output options (especially,
+             added a option to export locus consensus sequences).
+    Feature: denovo_map.pl and red_map.pl now stop if a component
+             of the pipeline fails.
+    Feature: Improved the output of denovo_map.pl and ref_map.pl.
+    Bugfix: Added a format check in Fasta/GzFasta to avoid a potential
+            segfault when working on FastQ files.
+    Bugfix: Fixed a bug in count_fixed_catalog_snps.py that could cause
+            overwrites when working with uncompressed files.

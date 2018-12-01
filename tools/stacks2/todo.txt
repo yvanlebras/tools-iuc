@@ -1,0 +1,48 @@
+For new tools I tried to add sections analogous to the strcuture
+of stacks help output. Since we break compatibility to the stacks 1.48
+wrappers anyway we should think of doing this for the tools that were
+present already in 1.48 as well. Furthermore stacks help does not categorize
+the single letter options (-x,...), would be nice to put them in the correct
+section / conditional as well.
+
+
+
+
+Raw Reads
+    process_radtags planemo test-data-generated-wdefaults sufficient-test
+    process_shortreads
+        parameters 
+    clone_filter
+        parameters
+    kmer_filter
+        
+Core
+
+    ustacks parameters planemo test-data-generated-wdefaults sufficient-test
+    cstacks parameters planemo test-data-generated-wdefaults sufficient-test
+    sstacks parameters planemo test-data-generated-wdefaults sufficient-test
+    tsv2bam parameters planemo test-data-generated-wdefaults sufficient-test
+    gstacks parameters planemo test-data-generated-wdefaults
+populations parameters planemo test-data-generated-wdefaults
+
+tools
+    tool 
+
+Execution control
+
+    denovo_map.pl
+    ref_map.pl
+
+TODO
+- tools that accept iput from multiple previous stacks tools need a condition
+  to separate: 1) separate inputs 2) input from pipeline output
+  
+  alternatively let the user merge the collections
+
+- change input description in fastq_input_macro using tools 
+- remove pipes (as in tsv2bam)
+- make log output optional
+- denovo should also unzip stacks_outputs/catalog.calls to get the vcf
+- loops in procrad and ustacks should not use name only (multiple elements might have the same name)
+- help updates
+- test stacks_summary from bioconda

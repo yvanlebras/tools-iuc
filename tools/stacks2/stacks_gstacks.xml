@@ -10,11 +10,12 @@
 
 mkdir bam_inputs stacks_outputs &&
 #if $mode_cond.mode_select == "denovo" and not $popmap:
-    #if $input_type.input_type_selector == 'manual':
-        #set count = len($input_type.input_bam)
-    #else
-        #set count = len($input_type.input_bam.keys())
-    #end if
+    ## since collections have no len .. yet
+    #try:
+        #set count = len($input_bam)
+    #except:
+        #set count = len($input_bam.keys())
+    #end try
     #if count == 1:
         #for $bam in $input_bam:
             ln -s '$bam' bam_inputs/catalog.bam && 
@@ -176,12 +177,7 @@ gstacks
     <tests>
         <!-- denovomode, w popmap -->
         <test>
-            <param name="input_bam">
-                <collection type="list">
-                    <element name="PopA_01.matches" ftype="bam" value="tsv2bam/PopA_01.matches.bam" />
-                    <element name="PopA_02.matches" ftype="bam" value="tsv2bam/PopA_02.matches.bam" />
-               </collection>
-            </param>
+            <param name="input_bam" ftype="bam" value="tsv2bam/PopA_01.matches.bam,tsv2bam/PopA_02.matches.bam"/>
             <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
             <conditional name="mode_cond">
                 <param name="mode_select" value="denovo"/>
@@ -246,12 +242,7 @@ gstacks
         </test>
         <!-- refbased w popmap (here bam names need to be equal to sample names in popmap), \-\-unpaired, advanced, snp model -->
         <test>
-            <param name="input_bam">
-                <collection type="list">
-                    <element name="PopA_01" ftype="bam" value="tsv2bam/PopA_01.matches.bam" />
-                    <element name="PopA_02" ftype="bam" value="tsv2bam/PopA_02.matches.bam" />
-               </collection>
-            </param>
+		<param name="input_bam" ftype="bam" value="refmap/PopA_01.bam,refmap/PopA_02.bam"/>
             <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
             <conditional name="mode_cond">
                 <param name="mode_select" value="refbased"/>
@@ -290,12 +281,7 @@ gstacks
         </test>
         <!-- refbased wo popmap (here bam names don't matter), \-\-ignorepe -->
         <test>
-            <param name="input_bam">
-                <collection type="list">
-                    <element name="PopA_01.matches" ftype="bam" value="tsv2bam/PopA_01.matches.bam" />
-                    <element name="PopA_02.matches" ftype="bam" value="tsv2bam/PopA_02.matches.bam" />
-               </collection>
-            </param>
+            <param name="input_bam" ftype="bam" value="tsv2bam/PopA_01.matches.bam,tsv2bam/PopA_02.matches.bam"/>
             <conditional name="mode_cond">
                 <param name="mode_select" value="refbased"/>
                 <conditional name="paired_cond">

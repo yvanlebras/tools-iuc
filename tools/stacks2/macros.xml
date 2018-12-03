@@ -128,6 +128,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
         </data>
     </xml>
 
+
     <!-- fastq input -->
     <xml name="fastq_input_macro" token_fastq_optional="false">
         <conditional name="input_type">
@@ -139,7 +140,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
                 <param name="samples" argument="-f" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" type="data" label="Reads" multiple="true" optional="@FASTQ_OPTIONAL@"/>
             </when>
             <when value="list">
-                <param name="samples" argument="-f" type="data_collection" collection_type="list,list:paired" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" label="List for forward reads or read pairs" optional="@FASTQ_OPTIONAL@"/>
+                <param name="samples" argument="-f" type="data_collection" collection_type="list:paired" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" label="List for forward reads or read pairs" optional="@FASTQ_OPTIONAL@"/>
             </when>
         </conditional>
     </xml>

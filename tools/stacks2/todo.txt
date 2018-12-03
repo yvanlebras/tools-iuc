@@ -5,9 +5,6 @@ present already in 1.48 as well. Furthermore stacks help does not categorize
 the single letter options (-x,...), would be nice to put them in the correct
 section / conditional as well.
 
-
-
-
 Raw Reads
     process_radtags planemo test-data-generated-wdefaults sufficient-test
     process_shortreads

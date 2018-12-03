@@ -46,19 +46,14 @@ $paired_select
     <tests>
         <!-- bams as list -->
         <test>
-            <param name="input_bam">
-                <collection type="list">
-                    <element name="PopA_01" ftype="bam" value="refmap/PopA_01.bam" />
-                    <element name="PopA_02" ftype="bam" value="refmap/PopA_01.bam" />
-               </collection>
-            </param>
+            <param name="input_bam" ftype="bam" value="refmap/PopA_01.bam,refmap/PopA_02.bam"/>
             <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
             <param name="add_log" value="yes" />
             <output ftype="txt" name="output_log"><assert_contents><has_text text="ref_map.pl is done." /></assert_contents></output>
             <!-- TODO test for outputs -->
         </test>
         <test>
-            <param name="input_bam" value="refmap/PopA_01.bam,refmap/PopA_02.bam"/>
+            <param name="input_bam" ftype="bam" value="refmap/PopA_01.bam,refmap/PopA_02.bam"/>
             <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
             <param name="paired_select" value="--unpaired"/>
             <param name="model_options|var_alpha" value="0.1" />

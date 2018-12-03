@@ -1,0 +1,224 @@
+<?xml version="1.0"?>
+
+<!-- macros and tokens for process_radtags and process_short_reads -->
+
+<macros>
+    <!-- fastq input for process_radtags/shortreads-->
+    <xml name="process_inputs">
+        <conditional name="input_type">
+            <param name="options_type_selector" type="select" label="Single-end or paired-end reads files">
+                <option value="single" selected="True">Single-end files</option>
+                <option value="paired">Paired-end files</option>
+            </param>
+            <when value="single">
+                <param name="fqinputs" argument="-f" format="fastqsanger,fastqsanger.gz" multiple="true" type="data" label="singles-end reads infile(s)" help="input files" />
+                <param name="barcode_encoding" type="select" label="Barcode location">
+                    <expand macro="barcode_encoding_single" />
+                </param>
+            </when>
+            <when value="paired">
+                <param name="fqinputs" type="data_collection" collection_type="list:paired" label="paired-end reads infile(s)" format="fastqsanger,fastqsanger.gz"/>
+                <param name="barcode_encoding" type="select" label="Barcode location">
+                    <expand macro="barcode_encoding_pair" />
+                </param>
+            </when>
+        </conditional>
+        <param name="barcode" argument="-b" type="data"  format="tabular,txt" label="Barcode file" />
+    </xml>
+    <token name="@FASTQ_INPUT_PREPROC@"><![CDATA[
+    #for $input in $input_type.fqinputs:
+        #if $input_type.options_type_selector == "single"
+            #set $isfq=$input.is_of_type('fastqsanger')
+            #set $name=$clean_ext($input.element_identifier)
+        #else:
+            #set $isfq=$input.forward.is_of_type('fastqsanger')
+            ## TODO if https://github.com/galaxyproject/galaxy/pull/7031 is
+            ## backported use element_identifier consistently and fix release in <tool>?
+            #set $name=$clean_ext($input.name)
+        #end if
+    
+        #if $isfq:
+            #set $ext = "fastq"
+            #set inputype = "fastq"
+        #else
+            #set $ext = "fastq.gz"
+            #set inputype = "gzfastq"
+        #end if
+    
+        #if $input_type.options_type_selector == "single"
+            ln -s '$input' 'stacks_inputs/${name}.${ext}' &&
+        #else:
+            ## procrad needs _R[12]_ in the file name, so we add an add 0
+            ln -s '$input.forward' 'stacks_inputs/${name}_R1_0.${ext}' &&
+            ln -s '$input.reverse' 'stacks_inputs/${name}_R2_0.${ext}' &&
+        #end if
+    #end for
+    ]]></token>
+    <token name="@PROCESS_IOOPTIONS@"><![CDATA[
+    -p stacks_inputs/
+    #if $input_type.options_type_selector == "paired"
+        --paired
+    #end if
+    -i $inputype
+    -b '$barcode'
+    $input_type.barcode_encoding
+    #if str( $outype ) != "auto"
+        -y $outype
+    #end if
+    -o stacks_outputs
+    ]]></token>
+    <xml name="process_output_types">
+        <param name="outype" argument="-y" type="select" label="Output format" >
+            <option value="auto" selected="True">Same as input</option>
+            <option value="fastq">fastq</option>
+            <option value="fasta">fasta</option>
+            <option value="gzfastq">gzipped fastq</option>
+            <option value="gzfasta">gzipped fasta</option>
+        </param>
+    </xml>
+    <xml name="process_outputs">
+        <collection name="demultiplexed" type="list" label="${tool.name} on ${on_string} Demultiplexed reads">
+            <filter>input_type['options_type_selector'] == "single"</filter>
+            <expand macro="discover_faqgz_output_macro" pattern="(?P&lt;name&gt;.+)" dir="stacks_outputs"/>
+        </collection>
+        <collection name="demultiplexed_paired" type="list:paired" label="${tool.name} on ${on_string} Demultiplexed reads">
+            <filter>input_type['options_type_selector'] == "paired"</filter>
+            <expand macro="discover_faqgz_output_macro" pattern="(?P&lt;identifier_0&gt;.+)\.(?P&lt;identifier_1&gt;[^.]+)" dir="stacks_outputs"/>
+        </collection>
+
+        <collection name="remaining" type="list:paired" label="${tool.name} on ${on_string} Remaining orphan reads">
+            <filter>input_type['options_type_selector'] == "paired"</filter>
+            <expand macro="discover_faqgz_output_macro" pattern="(?P&lt;identifier_0&gt;.+)\.rem\.(?P&lt;identifier_1&gt;[^.]+)" dir="stacks_outputs/remaining"/>
+        </collection>
+
+        <!-- note irrespective of -y output is always named fastq and are never zipped -->
+        <collection name="discarded" type="list" label="${tool.name} on ${on_string} Discarded reads">
+            <filter>capture is True and input_type['options_type_selector'] == "single"</filter>
+            <expand macro="discover_faq_output_macro" pattern="(?P&lt;name&gt;.*)" dir="stacks_outputs/discarded"/>
+        </collection>
+        <collection name="discarded_paired" type="list:paired" label="${tool.name} on ${on_string} Discarded reads">
+            <filter>capture is True and input_type['options_type_selector'] == "paired"</filter>
+            <expand macro="discover_faq_output_macro" pattern="(?P&lt;identifier_0&gt;.+)\.(?P&lt;identifier_1&gt;[^.]+)" dir="stacks_outputs/discarded"/>
+        </collection>
+    </xml>
+
+    <!-- FASTQ filtering options -->
+    <xml name="process_filter">
+        <conditional name="filter_cond" >
+            <param name="filter_select" type="select" label="do quality filtering">
+                <option value="yes">Yes</option>
+                <option value="no" selected="true">No</option>
+            </param>
+            <when value="yes">
+                <param name="sliding" type="float" value="0.15" min="0" max="1" argument="-w" label="Set the size of the sliding window as a fraction of the read length, between 0 and 1" />
+                <param name="score" type="integer" value="10" min="0" max="40" argument="-s" label="Set the score limit. If the average score within the sliding window drops below this value, the read is discarded" />
+                <param name="remove" type="boolean" checked="false" truevalue="-c" falsevalue="" argument="-c" label="Clean data, remove any read with an uncalled base" />
+                <param name="discard" type="boolean" checked="false" truevalue="-q" falsevalue="" argument="-q" label="Discard reads with low quality scores"/>
+                <param argument="--filter_illumina" type="boolean" checked="false" truevalue="--filter_illumina" falsevalue="" label="discard reads that have been marked by Illumina's chastity/purity filter as failing" />
+            </when>
+            <when value="no">
+                <param argument="--len_limit" type="integer" value="" optional="true" label="minimum sequence length" help="useful if your data has already been trimmed"/>
+            </when>
+        </conditional>
+        <param name="capture" type="boolean" checked="false" truevalue="-D" falsevalue="" argument="-D" label="Capture discarded reads to a file" />
+    </xml>
+    <token name="@PROCESS_FILTER@"><![CDATA[
+    #if $filter_cond.filter_select == 'yes':
+        -w $filter_cond.sliding
+        -s $filter_cond.score
+        $filter_cond.remove
+        $filter_cond.discard
+        $filter_cond.filter_illumina
+    #else
+        #if str($filter_cond.len_limit) != "":
+            --len_limit $filter_cond.len_limit
+        #end if
+    #end if
+    $capture
+    ]]></token>
+    <token name="@PROCESS_FASTQ_POSTPROC@"><![CDATA[
+    #if $capture:
+        && mkdir stacks_outputs/discarded/
+        && mv stacks_outputs/*discards stacks_outputs/discarded/
+
+        ## fix the _R[12]_0 that was added for preparing the input
+        #if $input_type.options_type_selector == 'paired':
+        && find stacks_outputs/discarded/ -type f | while read file; do mv "\$file" "\$(echo \$file | sed 's/_R1_0/.1/; s/_R2_0/.2/;')"; done
+        #end if
+        ## also remove the gz which is added by procrad (but its uncompressed)
+        && find stacks_outputs/discarded/ -type f -iname "*.gz.discards" | while read file; do mv "\$file" "\$(echo \$file | sed 's/.gz.discards$/.discards/;')"; done
+
+        ## the discard files are named fastq even if the output is fasta
+        #if str($outype).endswith("fasta"):
+            && find stacks_outputs/discarded/ -type f | while read file; do mv "\$file" "\$(echo \$file | sed 's/\.fastq.discards/.fa/;')"; done
+        #else
+            && find stacks_outputs/discarded/ -type f | while read file; do mv "\$file" "\$(echo \$file | sed 's/\.fastq.discards/.fq/;')"; done
+        #end if
+    #end if
+    ## prepare paired read output for processing in galaxy
+    #if $input_type.options_type_selector == 'paired':
+        && mkdir stacks_outputs/remaining
+        && mv stacks_outputs/*.rem.[12].* stacks_outputs/remaining/
+        && find stacks_outputs/ -iregex ".*.f[aq]\(\.gz\)?" | while read file; do mv "\$file" "\$(echo \$file | sed 's/\.1\./.forward./; s/\.2\./.reverse./')"; done
+    #end if
+    ]]></token>
+
+
+
+    <!-- adapter trimming options -->
+    <xml name="process_adapter">
+            <param argument="--adapter_1" type="text" value="" optional="true" label="adaptor sequence that may occur on the first read" />
+            <param argument="--adapter_2" type="text" value="" optional="true" label="adaptor sequence that may occur on the paired-read" />
+            <param argument="--adapter_mm" type="integer" value="" optional="true" label="number of mismatches allowed in the adapter sequence"/>
+    </xml>
+    <token name="@PROCESS_ADAPTER@"><![CDATA[
+    ## Adapter options
+    #if str($options_advanced.adapter_1) != "":
+        --adapter_1 $options_advanced.adapter_1
+    #end if
+    #if str($options_advanced.adapter_2) != "":
+        --adapter_2 $options_advanced.adapter_2
+    #end if
+    #if str($options_advanced.adapter_mm) != "":
+        --adapter_mm $options_advanced.adapter_mm
+    #end if
+    ]]></token>
+
+    <!-- barcode rescue options -->
+    <xml name="rescue_barcode">
+        <conditional name="rescue_cond">
+            <param name="rescue" type="select" argument="-r" label="Rescue mutated barcodes and RAD-Tags?">
+                <option value="-r">yes</option>
+                <option value="" selected="true">no</option>
+            </param>
+	    <when value="-r">
+                <param argument="--barcode_dist_1" type="integer" value="" optional="true" label="number of allowed mismatches when rescuing first read barcodes" help="(default 1)"/>
+    	        <param argument="--barcode_dist_2" type="integer" value="" optional="true" label="number of allowed mismatches when rescuing paired read barcodes" help="(default value for single end barcodes)"/>
+            </when>
+            <when value=""/>
+        </conditional>
+    </xml>
+    <token name="@RESCUE_BARCODE@"><![CDATA[
+    #if str($options_advanced.rescue_cond.rescue) != ""
+        $options_advanced.rescue_cond.rescue
+        #if str($options_advanced.rescue_cond.barcode_dist_1) != "":
+            --barcode_dist_1 $options_advanced.rescue_cond.barcode_dist_1
+        #end if
+        #if str($options_advanced.rescue_cond.barcode_dist_2) != "":
+            --barcode_dist_2 $options_advanced.rescue_cond.barcode_dist_2
+        #end if
+    #end if
+    ]]></token>
+
+    <!-- advanced options that are shared --> 
+    <xml name="common_advanced">
+        <param name="truncate" type="integer" value="" optional="True" argument="-t" label="Truncate final read length to this value" />
+        <param argument="--retain_header" type="boolean" checked="false" truevalue="--retain_header" falsevalue="" label="Retain unmodified FASTQ headers in the output" />
+    </xml>
+    <token name="@COMMON_ADVANCED@"><![CDATA[
+    #if str($options_advanced.truncate)
+        -t $options_advanced.truncate
+    #end if
+    $options_advanced.retain_header
+    ]]></token>
+</macros>

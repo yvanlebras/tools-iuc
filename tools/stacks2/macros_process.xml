@@ -76,6 +76,17 @@
             <option value="gzfasta">gzipped fasta</option>
         </param>
     </xml>
+
+    <xml name="discover_faqgz_output_macro" token_pattern="" token_dir="">
+        <expand macro="discover_faq_output_macro" pattern="@PATTERN@" dir="@DIR@"/>
+        <discover_datasets pattern="@PATTERN@\.fq\.gz$" ext="fastqsanger.gz" directory="@DIR@/" />
+        <discover_datasets pattern="@PATTERN@\.fa\.gz$" ext="fasta.gz" directory="@DIR@/" />
+    </xml>
+    <xml name="discover_faq_output_macro" token_pattern="" token_dir="">
+        <discover_datasets pattern="@PATTERN@\.fq$" ext="fastqsanger" directory="@DIR@/" />
+        <discover_datasets pattern="@PATTERN@\.fa$" ext="fasta" directory="@DIR@/" />
+    </xml>
+
     <xml name="process_outputs">
         <collection name="demultiplexed" type="list" label="${tool.name} on ${on_string} Demultiplexed reads">
             <filter>input_type['options_type_selector'] == "single"</filter>
@@ -143,7 +154,7 @@
 
         ## fix the _R[12]_0 that was added for preparing the input
         #if $input_type.options_type_selector == 'paired':
-        && find stacks_outputs/discarded/ -type f | while read file; do mv "\$file" "\$(echo \$file | sed 's/_R1_0/.1/; s/_R2_0/.2/;')"; done
+            && find stacks_outputs/discarded/ -type f | while read file; do mv "\$file" "\$(echo \$file | sed 's/_R1_0/.1/; s/_R2_0/.2/;')"; done
         #end if
         ## also remove the gz which is added by procrad (but its uncompressed)
         && find stacks_outputs/discarded/ -type f -iname "*.gz.discards" | while read file; do mv "\$file" "\$(echo \$file | sed 's/.gz.discards$/.discards/;')"; done
@@ -158,7 +169,7 @@
     ## prepare paired read output for processing in galaxy
     #if $input_type.options_type_selector == 'paired':
         && mkdir stacks_outputs/remaining
-        && mv stacks_outputs/*.rem.[12].* stacks_outputs/remaining/
+        && find stacks_outputs -iregex ".*\.rem\.[12]\.f[aq]\(\.gz\)?" | while read file; do mv "\$file" stacks_outputs/remaining/; done
         && find stacks_outputs/ -iregex ".*.f[aq]\(\.gz\)?" | while read file; do mv "\$file" "\$(echo \$file | sed 's/\.1\./.forward./; s/\.2\./.reverse./')"; done
     #end if
     ]]></token>

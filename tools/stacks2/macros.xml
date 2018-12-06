@@ -189,15 +189,6 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
     #end for
     ]]></token>
 
-    <xml name="discover_faqgz_output_macro" token_pattern="" token_dir="">
-        <expand macro="discover_faq_output_macro" pattern="@PATTERN@" dir="@DIR@"/>
-        <discover_datasets pattern="@PATTERN@\.fq\.gz$" ext="fastqsanger.gz" directory="@DIR@/" />
-        <discover_datasets pattern="@PATTERN@\.fa\.gz$" ext="fasta.gz" directory="@DIR@/" />
-    </xml>
-    <xml name="discover_faq_output_macro" token_pattern="" token_dir="">
-        <discover_datasets pattern="@PATTERN@\.fq$" ext="fastqsanger" directory="@DIR@/" />
-        <discover_datasets pattern="@PATTERN@\.fa$" ext="fasta" directory="@DIR@/" />
-    </xml>
     <token name="@CLEAN_EXT@">
         <![CDATA[
         #from os.path import splitext

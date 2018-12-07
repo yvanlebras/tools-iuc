@@ -7,9 +7,7 @@
     <expand macro="stdio"/>
     <expand macro="version_cmd"/>
     <command><![CDATA[
-
         #if $data_type.dt_select == "single"
-
             #if $data_type.fname.is_of_type('fastqsanger')
                 #set $ext = ".fq"
                 #set inputype = "fastq"
@@ -17,10 +15,8 @@
                 #set $ext = ".fq.gz"
                 #set inputype = "gzfastq"
             #end if
-
             ln -s '$data_type.fname' R1$ext &&
-        #else
-
+        #elif $data_type.dt_select == "pair"
             #if $data_type.fwd.is_of_type('fastqsanger')
                 #set $ext = ".fq"
                 #set inputype = "fastq"
@@ -28,7 +24,6 @@
                 #set $ext = ".fq.gz"
                 #set inputype = "gzfastq"
             #end if
-
             ln -s '$data_type.fwd' R1$ext &&
             ln -s '$data_type.rev' R2$ext &&
         #end if
@@ -37,29 +32,39 @@
 
         &&
 
-        clone_filter
+        kmer_filter
             #if $data_type.dt_select == 'single':
                 -f R1$ext
-                
             #else
                 -1 R1$ext
                 -2 R2$ext
             #end if
-
+## TODO    $options_kmer_char.read_k_freq
             -i $inputype
-
             -o clone_outputs
             $capture
-
-            #if $oligo_len_1
-                --oligo_len_1 $oligo_len_1
-            #end if
-            #if $oligo_len_2
-                --oligo_len_2 $oligo_len_2
-            #end if
-            $data_type.barcode_encoding
-            $retain_oligo
             -y gzfastq
+$options_filtering.rare
+$options_filtering.abundant
+--k_len $options_filtering.k_len
+--max_k_freq $options_advanced_filtering.max_k_freq
+#if str($options_advanced_filtering.min_lim)!="":
+    --min_lim $options_advanced_filtering.min_lim
+#end if
+#if str($options_advanced_filtering.max_lim)!="":
+    --max_lim $options_advanced_filtering.max_lim
+#end if
+#if str($options_normalization.normalize)!="":
+    --normalize $options_normalization.normalize
+#end if
+#if $options_kmer_char.write_k_freq
+    --read_k_freq $kfreq
+#end if
+$options_kmer_char.k_dist
+#if $options_kmer_char.k_dist
+    | sed 's/KmerFrequency/# KmerFrequency/' $kfreqdist> 
+#end if
+
 
     ]]></command>
     <inputs>
@@ -70,17 +75,10 @@
             </param>
             <when value="single">
                 <param name="fname" type="data" format="fastqsanger,fastqsanger.gz" label="FASTQ" />
-                <param name="barcode_encoding" type="select" label="Barcode location">
-                    <expand macro="barcode_encoding_single" />
-                </param>
-
             </when>
             <when value="pair">
                 <param name="fwd" type="data" format="fastqsanger,fastqsanger.gz" label="Forward FASTQ" />
                 <param name="rev" type="data" format="fastqsanger,fastqsanger.gz" label="Reverse FASTQ" />
-                <param name="barcode_encoding" type="select" label="Barcode location">
-                    <expand macro="barcode_encoding_pair" />
-                </param>
             </when>
         </conditional>
         <param name="capture" type="boolean" checked="false" truevalue="-D" falsevalue="" argument="-D" label="Capture discarded reads to a file" />
@@ -90,31 +88,37 @@
             <param argument="--k_len" type="integer" value="15" label="k-mer size" />
         </section>
         <section name="options_advanced_filtering" title="Advanced fitering options" expanded="False">
+            <param argument="--max_k_freq" type="integer" value="20000" label="number of times a kmer must occur to be considered abundant" />
+            <param argument="--min_lim" type="integer" value="" optional="true" label="number of rare kmers occuring in a row required to discard a read" help="(default: 80% of the k-mer length)." />
+            <param argument="--max_lim" type="integer" value="" optional="true" label="number of abundant kmers required to discard a read" help="(default: 80% of the k-mers in a read)" />
         </section>
-            <param argument="--max_k_freq" type="integer" value="20" label="number of times a kmer must occur to be considered abundant" />
-            <param argument="--min_lim" type="integer" value="" optional="true" label="number of rare kmers occuring in a row required to discard a read" help="(0/empty: 80% of the k-mer length)." />
-            <param argument="--max_lim" type="integer" value="" optional="true" label="number of abundant kmers required to discard a read" help="(0/empty: 80% of the k-mers in a read)" />
         <section name="options_normalization" title="Normalization options" expanded="False">
-            <param argument="--normalize" type="integer" value="" label="normalize read depth according to k-mer coverage" />
+            <param argument="--normalize" type="integer" value="" optional="true" label="normalize read depth according to k-mer coverage" />
         </section>
         <section name="options_kmer_char" title="Characterizing K-mers options" expanded="False">
             <param argument="--write_k_freq" type="boolean" checked="false" truevalue="--write_k_freq" falsevalue="" label="write kmers along with their frequency of occurrence and exit" />
             <param argument="--k_dist" type="boolean" checked="false" truevalue="--k_dist" falsevalue="" label="print k-mer frequency distribution and exit" />
         </section>
-        <section name="options_advanced_input" title="Advanced input options" expanded="False">
-            <param argument="--read_k_freq" type="boolean" checked="false" truevalue="--read_k_freq" falsevalue="" label="read a set of kmers along with their frequencies of occurrence instead of reading raw input files" />
-        </section>
+	<!--<section name="options_advanced_input" title="Advanced input options" expanded="False">
+            <param argument="\-\-read_k_freq" type="boolean" checked="false" truevalue="\-\-read_k_freq" falsevalue="" label="read a set of kmers along with their frequencies of occurrence instead of reading raw input files" />
+	</section>-->
     </inputs>
     <outputs>
         <data format="fastqsanger.gz" name="clean" from_work_dir="clone_outputs/R1.fq.gz"  label="${tool.name} on ${on_string}">
-            <filter>data_type['dt_select'] == 'single'</filter>
+            <filter>data_type['dt_select'] == 'single' and not options_kmer_char['k_dist']</filter>
         </data>
 
         <data format="fastqsanger.gz" name="clean_fwd" from_work_dir="clone_outputs/R1.1.fq.gz" label="${tool.name} on ${on_string} Forward reads">
-            <filter>data_type['dt_select'] == 'pair'</filter>
+            <filter>data_type['dt_select'] == 'pair' and not options_kmer_char['k_dist']</filter>
         </data>
         <data format="fastqsanger.gz" name="clean_rev" from_work_dir="clone_outputs/R2.2.fq.gz" label="${tool.name} on ${on_string} Reverse reads">
             <filter>data_type['dt_select'] == 'pair'</filter>
+        </data>
+        <data format="tabular" name="kfreq" label="${tool.name} on ${on_string} kmer frequencies">
+            <filter>options_kmer_char['write_k_freq']</filter>
+        </data>
+        <data format="tabular" name="kfreqdist" label="${tool.name} on ${on_string} kmer frequency distribution">
+            <filter>options_kmer_char['k_dist']</filter>
         </data>
     </outputs>
     <tests>
@@ -123,8 +127,17 @@
                 <param name="dt_select" value="single" />
                 <param name="fname" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
             </conditional>
-            <param name="oligo_len_1" value="6" />
             <output name="clean" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.single.gz"/>
+        </test>
+        <test>
+            <conditional name="data_type">
+                <param name="dt_select" value="single" />
+                <param name="fname" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
+            </conditional>
+            <section name="options_kmer_char">
+                <param name="write_k_freq" value="--write_k_freq" />
+            </section>
+            <output name="kfreq" file="kmerfilter/kfreq.tsv"/>
         </test>
 	<!--<test>
             <conditional name="data_type">

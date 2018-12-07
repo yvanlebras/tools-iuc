@@ -7,7 +7,6 @@
     <expand macro="stdio"/>
     <expand macro="version_cmd"/>
     <command><![CDATA[
-
         #if $data_type.dt_select == "single"
 
             #if $data_type.fname.is_of_type('fastqsanger')
@@ -34,7 +33,7 @@
         #end if
 
 
-        mkdir clone_outputs
+        mkdir outputs
 
         &&
 
@@ -48,12 +47,11 @@
 
             -i $inputype
 
-            -o clone_outputs
+            -o outputs
             $capture
-
+            $data_type.barcode_encoding
             #if $oligo_len_1
                 --oligo_len_1 $oligo_len_1
-                $data_type.barcode_encoding
             #end if
             #if $oligo_len_2
                 --oligo_len_2 $oligo_len_2
@@ -62,7 +60,6 @@
             ## only supports fastq.gz output since the 
             ## the program outputs empty files for fasta/fastq 
             -y gzfastq
-
     ]]></command>
     <inputs>
         <conditional name="data_type">
@@ -73,7 +70,7 @@
             <when value="single">
                 <param name="fname" type="data" format="fastqsanger,fastqsanger.gz" label="FASTQ" />
                 <param name="barcode_encoding" type="select" label="Barcode location">
-                    <expand macro="barcode_encoding_single" />
+                    <expand macro="barcode_encoding_single" type="Random oligo"/>
                 </param>
 
             </when>
@@ -81,29 +78,30 @@
                 <param name="fwd" type="data" format="fastqsanger,fastqsanger.gz" label="Forward FASTQ" />
                 <param name="rev" type="data" format="fastqsanger,fastqsanger.gz" label="Reverse FASTQ" />
                 <param name="barcode_encoding" type="select" label="Barcode location">
-                    <expand macro="barcode_encoding_pair" />
+                    <expand macro="barcode_encoding_pair" type="Random oligo"/>
                 </param>
             </when>
         </conditional>
         <param name="capture" type="boolean" checked="false" truevalue="-D" falsevalue="" argument="-D" label="Capture discarded reads to a file" />
-        <param name="oligo_len_1" optional="true" type="integer" label="length of the single-end oligo sequence in data set"/>
+        <param name="oligo_len_1" type="integer" value="0" label="length of the single-end oligo sequence in data set"/>
         <param name="oligo_len_2" optional="true" type="integer" label="length of the paired-end oligo sequence in data set"/>
         <param argument="--retain_oligo" type="boolean" checked="false" truevalue="--retain_oligo" falsevalue="" label="do not trim off the random oligo sequence (if oligo is inline)" />
 
     </inputs>
     <outputs>
-        <data format="fastqsanger.gz" name="clean" from_work_dir="clone_outputs/R1.fq.gz"  label="${tool.name} on ${on_string}">
+        <data format="fastqsanger.gz" name="clean" from_work_dir="outputs/R1.fq.gz"  label="${tool.name} on ${on_string}">
             <filter>data_type['dt_select'] == 'single'</filter>
         </data>
 
-        <data format="fastqsanger.gz" name="clean_fwd" from_work_dir="clone_outputs/R1.1.fq.gz" label="${tool.name} on ${on_string} Forward reads">
+        <data format="fastqsanger.gz" name="clean_fwd" from_work_dir="outputs/R1.1.fq.gz" label="${tool.name} on ${on_string} Forward reads">
             <filter>data_type['dt_select'] == 'pair'</filter>
         </data>
-        <data format="fastqsanger.gz" name="clean_rev" from_work_dir="clone_outputs/R2.2.fq.gz" label="${tool.name} on ${on_string} Reverse reads">
+        <data format="fastqsanger.gz" name="clean_rev" from_work_dir="outputs/R2.2.fq.gz" label="${tool.name} on ${on_string} Reverse reads">
             <filter>data_type['dt_select'] == 'pair'</filter>
         </data>
     </outputs>
     <tests>
+        <!-- single end, defaults-->
         <test>
             <conditional name="data_type">
                 <param name="dt_select" value="single" />
@@ -112,29 +110,44 @@
             <param name="oligo_len_1" value="6" />
             <output name="clean" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.single.gz"/>
         </test>
+        <!-- single end, alt BCencoding, capture-->
         <test>
             <conditional name="data_type">
                 <param name="dt_select" value="single" />
                 <param name="fname" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
                 <param name="barcode_encoding" value="--index_null" />
             </conditional>
+            <param name="capture" value="-D" />
+            <param name="oligo_len_1" value="6" />
+            <assert_command>
+                <has_text text="-D" />
+            </assert_command>
             <output name="clean" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz"/>
         </test>
+        <!-- paired end, defaults-->
         <test>
             <conditional name="data_type">
                 <param name="dt_select" value="pair" />
                 <param name="fwd" ftype="fastqsanger" value="clonefilter/R1_0001.1.fq.gz" />
                 <param name="rev" ftype="fastqsanger" value="clonefilter/R2_0001.2.fq.gz" />
             </conditional>
+            <param name="oligo_len_1" value="6" />
             <output name="clean_fwd" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz"/>
             <output name="clean_rev" compare="sim_size" file="clonefilter/Removed2_0001.2.2.fq.gz"/>
         </test>
+        <!-- paired end, non defaults-->
         <test>
             <conditional name="data_type">
                 <param name="dt_select" value="pair" />
                 <param name="fwd" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
                 <param name="rev" ftype="fastqsanger.gz" value="clonefilter/R2_0001.2.fq.gz" />
             </conditional>
+            <param name="oligo_len_1" value="6" />
+            <param name="capture" value="-D" />
+            <param name="retain_oligo" value="--retain_oligo" />
+            <assert_command>
+                <has_text text="--retain_oligo" />
+            </assert_command>
             <output name="clean_fwd" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz"/>
             <output name="clean_rev" compare="sim_size" file="clonefilter/Removed2_0001.2.2.fq.gz"/>
         </test>
@@ -142,7 +155,6 @@
     <help>
 <![CDATA[
 .. class:: infomark
-
 
 The clone_filter program is designed to identify PCR clones.
 

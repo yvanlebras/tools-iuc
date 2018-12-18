@@ -82,7 +82,7 @@ $options_advanced.no_overhang
             <param name="capture" value="true"/>
 	    <param name="no_read_trimming" value="--no_read_trimming" />
 	    <param name="mate_pair" value="--mate-pair" />
-	    <param iname="no_overhang" value="--no_overhang" />
+	    <param name="no_overhang" value="--no_overhang" />
 	    <param name="outype" value="gzfastq"/>
             <param name="add_log" value="yes" />
             <assert_command>

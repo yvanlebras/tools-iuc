@@ -175,8 +175,8 @@ $advanced_options.log_fst_comp
                 <option value="--write_single_snp">No: Analyse only the first SNP (--write_single_snp)</option>
                 <option value="--write_random_snp">No: Analyse only one random SNP (--write_random_snp)</option>
             </param>
-            <param name="whitelist" argument="-W" format="txt,tabular" type="data" optional="true" label="Specify a file containing Whitelisted markers to include in the export" />
-            <param name="blacklist" argument="-B" format="txt,tabular" type="data" optional="true" label="Specify a file containing Blacklisted markers to be excluded from the export" />
+            <param name="whitelist" argument="-W" format="txt,tabular" type="data" optional="true" label="Specify a file containing markers to include in the export" />
+            <param name="blacklist" argument="-B" format="txt,tabular" type="data" optional="true" label="Specify a file containing markers to exclude from the export" />
         </section>
 
         <!-- merging and Phasing -->
@@ -194,7 +194,6 @@ $advanced_options.log_fst_comp
         </section>
 
         <!-- Fstats -->
-        <!-- TODO are two levels of conditionals really necessary -->
         <conditional name="fstats_conditional">
             <param name="fstats" argument="--fstats" type="select" label="Enable SNP and haplotype-based F statistics" >
                 <option value="no">No</option>

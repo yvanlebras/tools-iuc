@@ -7,8 +7,7 @@ section / conditional as well.
 
 Raw Reads
     process_radtags planemo test-data-generated-wdefaults sufficient-test
-    process_shortreads
-        parameters 
+    process_shortreads parameters "
     clone_filter
         parameters
     kmer_filter

@@ -19,7 +19,7 @@ mkdir stacks_inputs stacks_outputs
 ## - create -s sample1prefix -s sample2prefix .. 
 
 #set $samples = ""
-#for $input_file in $input_col
+#for $input_file in $input_cat
     #set $filename = str($input_file.element_identifier)
     #if not filename.endswith('.tsv')
         #set $filename = $filename + ".tsv"
@@ -66,7 +66,7 @@ $report_mmatches
     ]]></command>
 
     <inputs>
-        <param name="input_col" format="tabular,txt" type="data_collection" collection_type="list" label="Output from previous Stacks pipeline steps (e.g. denovo_map, refmap, ustacks or pstacks)" />
+	<expand macro="input_cat_macro"/>
 
         <param name="popmap" type="data" format="tabular,txt" label="Population map" help="If set, the catalog will be built from samples listed in this file" optional="true" argument="-M" />
 
@@ -87,7 +87,7 @@ $report_mmatches
         <!-- TODO add test w popmap -->
         <!-- test w default options -->
         <test>
-            <param name="input_col">
+            <param name="input_cat">
                 <collection type="list">
                     <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
                     <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
@@ -107,7 +107,7 @@ $report_mmatches
         </test>
         <!-- test w non default options (wo gapped, because tested already in ustacks) -->
         <test>
-            <param name="input_col">
+            <param name="input_cat">
                 <collection type="list">
                     <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
                     <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
@@ -140,13 +140,13 @@ $report_mmatches
 
 **What it does**
 
-A catalog can be built from any set of samples processed by the ustacks or pstacks programs. It will create a set of consensus loci, merging alleles together. In the case of a genetic cross, a catalog would be constructed from the parents of the cross to create a set of all possible alleles expected in the progeny of the cross.
+A catalog can be built from any set of samples processed by ustacks. It will create a set of consensus loci, merging alleles together. In the case of a genetic cross, a catalog would be constructed from the parents of the cross to create a set of all possible alleles expected in the progeny of the cross.
 
 --------
 
 **Input files**
 
-Output from denovo_map, refmap, ustacks or pstacks
+Output from denovo_map, refmap, or ustacks
 
 **Output files**
 

@@ -128,6 +128,20 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
         </data>
     </xml>
 
+    <!-- inputs from previous pipeline steps -->
+    <xml name="input_cat_macro">
+        <param name="input_cat" format="tabular,txt" type="data_collection" collection_type="list" label="Catalog files" help="output from a previous Stacks pipeline steps e.g. denovo_map, refmap or cstacks" />
+    </xml>
+    <xml name="input_tags_macro">
+        <param name="input_tags" format="tabular,txt" type="data_collection" collection_type="list" label="Samples stacks" help="output from previous Stacks pipeline steps e.g. denovo_map, refmap or ustacks" />
+    </xml>
+    <xml name="input_matches_macro">
+        <param name="input_matches" format="tabular,txt" type="data_collection" collection_type="list" label="Matches to the catalog" help="output from previous Stacks pipeline steps e.g. denovo_map, refmap or sstacks" />
+    </xml>
+    <xml name="input_aln_macro">
+        <param name="input_aln" format="tabular,txt" type="data_collection" collection_type="list" label="Output from previous Stacks pipeline steps (e.g. gstacks, denovo_map, or refmap)" argument="-P" />
+    </xml>
+
 
     <!-- fastq input -->
     <xml name="fastq_input_macro" token_fastq_optional="false">
@@ -241,9 +255,9 @@ $identifier#slurp
     </xml>
 
     <!-- ustacks outputs collection containing SAMPLE.tags.tsv, SAMPLE.snps.tsv, SAMPLE.alleles.tsv (SAMPLE!=catalog) -->
-    <!-- TODO tags, snps, and alleles could go to sub collections -->
+    <!-- TODO tags, snps, and alleles could go to sub collections; same for other tools -->
     <xml name="ustacks_outputs_macro" token_tooladd="">
-        <collection name="tabs" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Stacks">
+        <collection name="tabs" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Loci per sample">
             <discover_datasets pattern="(?P&lt;name&gt;(?!catalog).+\.tags)\.tsv$" ext="tabular" directory="stacks_outputs" />
             <discover_datasets pattern="(?P&lt;name&gt;(?!catalog).+\.snps)\.tsv$" ext="tabular" directory="stacks_outputs" />
             <discover_datasets pattern="(?P&lt;name&gt;(?!catalog).+\.alleles)\.tsv$" ext="tabular" directory="stacks_outputs" />
@@ -251,7 +265,7 @@ $identifier#slurp
     </xml>
     <!-- cstacks outputs collection containing catalog.tags.tsv, catalog.snps.tsv, catalog.alleles.tsv -->
     <xml name="cstacks_outputs_macro" token_tooladd="">
-        <collection name="catalog" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Catalog">
+        <collection name="catalog" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Catalog of loci">
             <discover_datasets pattern="(?P&lt;name&gt;catalog\.(tags|snps|alleles))\.tsv$" ext="tabular" directory="stacks_outputs" />
         </collection>
     </xml>
@@ -263,13 +277,13 @@ $identifier#slurp
     </xml>
     <!-- tsv2bam outputs collection containing SAMPLE.matches.bam -->
     <xml name="tsv2bam_outputs_macro" token_tooladd="">
-        <collection name="bams" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Stacks">
+        <collection name="bams" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Loci">
             <discover_datasets pattern="(?P&lt;name&gt;.+\.matches)\.bam$" ext="bam" directory="stacks_outputs" />
         </collection>
     </xml>
     <!-- gstacks outputs collection containing catalog.calls.vcf and catalog.fa.gz -->
     <xml name="gstacks_outputs_macro" token_tooladd="">
-        <collection name="gstacks_out" type="list" label="${tool.name} @TOOLADD@ on ${on_string}">
+        <collection name="gstacks_out" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Assembled contigs and variant sites">
             <discover_datasets pattern="(?P&lt;name&gt;catalog\.calls\.vcf)$" ext="vcf" directory="stacks_outputs" />
             <discover_datasets pattern="(?P&lt;name&gt;catalog\.fa\.gz)$" ext="fasta.gz" directory="stacks_outputs" />
         </collection>

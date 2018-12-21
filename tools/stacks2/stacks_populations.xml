@@ -13,7 +13,7 @@ mkdir stacks_inputs stacks_outputs
 &&
 
 #if str($options_usage.input_type) == 'stacks'
-    #for $input_file in $options_usage.input_col
+    #for $input_file in $options_usage.input_aln
         #set $filename = str($input_file.element_identifier)
         #if $filename == "catalog.calls" or $filename == "catalog.fa.gz":
             ln -s '${input_file}' 'stacks_inputs/${filename}' &&
@@ -151,7 +151,7 @@ $advanced_options.log_fst_comp
                 <option value="vcf">VCF file</option>
             </param>
             <when value="stacks">
-                <param name="input_col" format="tabular,txt" type="data_collection" collection_type="list" label="Output from previous Stacks pipeline steps (e.g. gstacks, denovo_map, or refmap)" argument="-P" />
+                <expand macro="input_aln_macro"/>
             </when>
             <when value="vcf">
                 <param name="input_vcf" format="vcf" type="data" label="VCF file" argument="-V" />
@@ -296,7 +296,7 @@ $advanced_options.log_fst_comp
         <!-- test w gstacks output as input and default options -->
         <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="catalog.calls.vcf" ftype="vcf" value="gstacks/catalog.calls.tsv" />
                     <element name="catalog.fa.gz" ftype="fasta.gz" value="gstacks/catalog.fa.gz" />
@@ -315,7 +315,7 @@ $advanced_options.log_fst_comp
         <!-- test w gstacks output as input, wo popmap, and default options -->
         <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="catalog.calls.vcf" ftype="vcf" value="gstacks/catalog.calls.tsv" />
                     <element name="catalog.fa.gz" ftype="fasta.gz" value="gstacks/catalog.fa.gz" />
@@ -327,7 +327,7 @@ $advanced_options.log_fst_comp
         <!-- test w gstacks output as input and + all outputs -->
         <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="catalog.calls.vcf" ftype="vcf" value="gstacks/catalog.calls.tsv" />
                     <element name="catalog.fa.gz" ftype="fasta.gz" value="gstacks/catalog.fa.gz" />
@@ -388,7 +388,7 @@ $advanced_options.log_fst_comp
         <!-- test w gstacks output as input and non default filtering -->
         <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="catalog.calls.vcf" ftype="vcf" value="gstacks/catalog.calls.tsv" />
                     <element name="catalog.fa.gz" ftype="fasta.gz" value="gstacks/catalog.fa.gz" />
@@ -419,7 +419,7 @@ $advanced_options.log_fst_comp
         <!-- test w gstacks output as input and non default merging/hwe -->
         <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="catalog.calls.vcf" ftype="vcf" value="gstacks/catalog.calls.tsv" />
                     <element name="catalog.fa.gz" ftype="fasta.gz" value="gstacks/catalog.fa.gz" />
@@ -446,7 +446,7 @@ $advanced_options.log_fst_comp
         <!-- test w gstacks output as input and non default fstats/kernel/bootstrap -->
         <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="catalog.calls.vcf" ftype="vcf" value="gstacks/catalog.calls.tsv" />
                     <element name="catalog.fa.gz" ftype="fasta.gz" value="gstacks/catalog.fa.gz" />
@@ -487,7 +487,7 @@ $advanced_options.log_fst_comp
 
     <!--        <test>
             <param name="options_usage|input_type" value="stacks" />
-            <param name="options_usage|input_col">
+            <param name="options_usage|input_aln">
                 <collection type="list">
                     <element name="batch_1.catalog.alleles.tsv" ftype="tabular" value="genotypes/batch_1.catalog.alleles.tsv" />
                     <element name="batch_1.catalog.snps.tsv" ftype="tabular" value="genotypes/batch_1.catalog.snps.tsv" />

@@ -1,0 +1,14 @@
+tsv2bam v2.2, executed 2018-11-27 13:20:44
+tsv2bam -P stacks_inputs -s PopA_01 -s PopA_02 -t 1
+Configuration for this run:
+  Stacks directory: 'stacks_inputs/'
+  Num. samples: 2
+
+Loading the catalog...
+Processing sample 'PopA_01'...
+Processing sample 'PopA_02'...
+
+Sample 'PopA_01': matched 3 sample loci to 3 catalog loci; wrote 66 records.
+Sample 'PopA_02': matched 3 sample loci to 3 catalog loci; wrote 60 records.
+
+tsv2bam is done.

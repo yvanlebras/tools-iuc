@@ -1,0 +1,24 @@
+gstacks v2.2, executed 2018-11-27 19:48:29
+/home/berntm/miniconda3/envs/__stacks@2.2/bin/gstacks -P stacks_outputs -M /tmp/tmpSlCHrR/files/000/dataset_3.dat -t 1 --var-alpha 0.05 --gt-alpha 0.05
+Locus/sample distributions will be written to 'stacks_outputs/gstacks.log.distribs'.
+
+Configuration for this run:
+  Input mode: denovo
+  Population map: '/tmp/tmpSlCHrR/files/000/dataset_3.dat'
+  Input files: 2, e.g. 'stacks_outputs/PopA_01.matches.bam'
+  Output to: 'stacks_outputs/'
+  Model: marukilow (var_alpha: 0.05, gt_alpha: 0.05)
+
+Reading BAM headers...
+Processing all loci...
+20%...
+50%...
+100%
+Input appears to be single-end (no paired-end reads were seen).
+
+Genotyped 3 loci:
+  effective per-sample coverage: mean=21.0x, stdev=1.0x, min=20.0x, max=22.0x
+  mean number of sites per locus: 94.0
+  a consistent phasing was found for 2 of out 2 (100.0%) diploid loci needing phasing
+
+gstacks is done.

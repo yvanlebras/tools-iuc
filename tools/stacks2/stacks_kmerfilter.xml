@@ -4,46 +4,45 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="stdio"/>
     <expand macro="version_cmd"/>
     <command detect_errors="aggressive"><![CDATA[
-        #if $data_type.dt_select == "single"
-            #if $data_type.fname.is_of_type('fastqsanger')
-                #set $ext = ".fq"
-                #set inputype = "fastq"
-            #else
-                #set $ext = ".fq.gz"
-                #set inputype = "gzfastq"
-            #end if
-            ln -s '$data_type.fname' R1$ext &&
-        #elif $data_type.dt_select == "pair"
-            #if $data_type.fwd.is_of_type('fastqsanger')
-                #set $ext = ".fq"
-                #set inputype = "fastq"
-            #else
-                #set $ext = ".fq.gz"
-                #set inputype = "gzfastq"
-            #end if
-            ln -s '$data_type.fwd' R1$ext &&
-            ln -s '$data_type.rev' R2$ext &&
-        #end if
+#if $input_type.input_type_select == "single"
+    #if $input_type.samples.is_of_type('fastqsanger')
+        #set $ext = ".fq"
+        #set inputype = "fastq"
+    #else
+        #set $ext = ".fq.gz"
+        #set inputype = "gzfastq"
+    #end if
+    ln -s '$input_type.samples' forward$ext &&
+#elif $input_type.input_type_select == "pair"
+    #if $input_type.samples.forward.is_of_type('fastqsanger')
+        #set $ext = ".fq"
+        #set inputype = "fastq"
+    #else
+        #set $ext = ".fq.gz"
+        #set inputype = "gzfastq"
+    #end if
+    ln -s '$input_type.samples.forward' forward$ext &&
+    ln -s '$input_type.samples.reverse' reverse$ext &&
+#end if
 
-        mkdir clone_outputs
+mkdir outputs
 
-        &&
+&&
 
-        kmer_filter
-            #if $data_type.dt_select == 'single':
-                -f R1$ext
-            #else
-                -1 R1$ext
-                -2 R2$ext
-            #end if
+kmer_filter
+#if $input_type.input_type_select == 'single':
+    -f forward$ext
+#else
+    -1 forward$ext
+    -2 reverse$ext
+#end if
 ## TODO    $options_kmer_char.read_k_freq
-            -i $inputype
-            -o clone_outputs
-            $capture
-            -y gzfastq
+-i $inputype
+-o outputs
+$capture
+-y fastq
 $options_filtering.rare
 $options_filtering.abundant
 --k_len $options_filtering.k_len
@@ -62,26 +61,42 @@ $options_filtering.abundant
 #end if
 $options_kmer_char.k_dist
 #if $options_kmer_char.k_dist
-    | sed 's/KmerFrequency/# KmerFrequency/' $kfreqdist> 
+    | sed 's/KmerFrequency/# KmerFrequency/' > $kfreqdist
 #end if
 
+## move outputs such that Galaxy can find them
+## if filtering is on then ...filt...fq[.gz] is created
+## if normalization is on then ...norm...fq[.gz] is created
+## if both are active then both files are created, but only norm is needed
+#if str($options_filtering.rare)!="" or str($options_filtering.abundant)!="" or str($options_normalization.normalize)!="":
+    #if str($options_normalization.normalize)!="":
+        #set infix="norm"
+    #else
+        #set infix="fil"
+    #end if
+    
+    #if $input_type.input_type_select == "single"
+        && mv outputs/forward.${infix}.fq '$clean'
+    #else
+        && mv outputs/forward.${infix}.1.fq '$clean_pair.forward'
+        && mv outputs/reverse.${infix}.2.fq '$clean_pair.reverse'
+    #end if
+    
+    #if $capture:
+    #if $input_type.input_type_select == "single"
+        && mv outputs/forward.discards.fq '$discarded'
+    #else
+        && mv outputs/forward.discards.fq '$discarded_pair.forward'
+        && mv outputs/reverse.discards.fq '$discarded_pair.reverse'
+    #end if
+    #end if
+
+#end if
 
     ]]></command>
     <inputs>
-        <conditional name="data_type">
-            <param name="dt_select" type="select" label="Single or Paired-end">
-                <option value="single">Single</option>
-                <option value="pair">Pair</option>
-            </param>
-            <when value="single">
-                <param name="fname" type="data" format="fastqsanger,fastqsanger.gz" label="FASTQ" />
-            </when>
-            <when value="pair">
-                <param name="fwd" type="data" format="fastqsanger,fastqsanger.gz" label="Forward FASTQ" />
-                <param name="rev" type="data" format="fastqsanger,fastqsanger.gz" label="Reverse FASTQ" />
-            </when>
-        </conditional>
-        <param name="capture" type="boolean" checked="false" truevalue="-D" falsevalue="" argument="-D" label="Capture discarded reads to a file" />
+        <expand macro="fastq_input_pair_bc"/>
+	<param name="capture" type="boolean" checked="false" truevalue="-D" falsevalue="" argument="-D" label="Capture discarded reads to a file" />
         <section name="options_filtering" title="Filtering options" expanded="False">
             <param argument="--rare" type="boolean" checked="false" truevalue="--rare" falsevalue="" label="turn on filtering based on rare k-mers" />
             <param argument="--abundant" type="boolean" checked="false" truevalue="--abundant" falsevalue="" label="turn on filtering based on abundant k-mers" />
@@ -104,16 +119,20 @@ $options_kmer_char.k_dist
 	</section>-->
     </inputs>
     <outputs>
-        <data format="fastqsanger.gz" name="clean" from_work_dir="clone_outputs/R1.fq.gz"  label="${tool.name} on ${on_string}">
-            <filter>data_type['dt_select'] == 'single' and not options_kmer_char['k_dist']</filter>
+        <data name="clean" format="fastqsanger" label="${tool.name} on ${on_string}">
+            <filter>input_type['input_type_select'] == 'single' and not options_kmer_char['k_dist']</filter>
         </data>
-
-        <data format="fastqsanger.gz" name="clean_fwd" from_work_dir="clone_outputs/R1.1.fq.gz" label="${tool.name} on ${on_string} Forward reads">
-            <filter>data_type['dt_select'] == 'pair' and not options_kmer_char['k_dist']</filter>
+        <collection name="clean_pair" type="paired" label="${tool.name} on ${on_string}"> 
+            <filter>input_type['input_type_select'] == 'pair' and not options_kmer_char['k_dist']</filter>
+        </collection>
+	
+	<data name="discarded" format="fastqsanger" label="${tool.name} on ${on_string}: discarded reads">
+            <filter>capture and input_type['input_type_select'] == 'single' and not options_kmer_char['k_dist']</filter>
         </data>
-        <data format="fastqsanger.gz" name="clean_rev" from_work_dir="clone_outputs/R2.2.fq.gz" label="${tool.name} on ${on_string} Reverse reads">
-            <filter>data_type['dt_select'] == 'pair'</filter>
-        </data>
+        <collection name="discarded_pair" type="paired" label="${tool.name} on ${on_string}: discarded reads"> 
+            <filter>capture and input_type['input_type_select'] == 'pair' and not options_kmer_char['k_dist']</filter>
+        </collection>
+	
         <data format="tabular" name="kfreq" label="${tool.name} on ${on_string} kmer frequencies">
             <filter>options_kmer_char['write_k_freq']</filter>
         </data>
@@ -122,50 +141,68 @@ $options_kmer_char.k_dist
         </data>
     </outputs>
     <tests>
+        <!-- default output for filtering -->
         <test>
-            <conditional name="data_type">
-                <param name="dt_select" value="single" />
-                <param name="fname" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
+            <conditional name="input_type">
+                <param name="input_type_select" value="single" />
+                <param name="samples" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
             </conditional>
+            <param name="rare" value="--rare"/>
+            <param name="abundant" value="--abundant" />
+            <param name="k_len" value="16" />
+            <assert_command>
+                <has_text text="--rare" />
+                <has_text text="--abundant" />
+                <has_text text="--k_len 16" />
+            </assert_command>
             <output name="clean" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.single.gz"/>
         </test>
         <test>
-            <conditional name="data_type">
-                <param name="dt_select" value="single" />
-                <param name="fname" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
+            <conditional name="input_type">
+                <param name="input_type_select" value="pair" />
+                <param name="samples">
+                    <collection type="paired">
+                        <element name="forward" value="clonefilter/R1_0001.1.fq.gz" />
+                        <element name="reverse" value="clonefilter/R2_0001.2.fq.gz" />
+                    </collection>
+                </param>
+            </conditional>
+	    <param name="capture" value="-D" />
+            <param name="normalize" value="1" />
+            <assert_command>
+                <has_text text="--normalize 1" />
+            </assert_command>
+            <output_collection name="clean_pair" type="paired">
+                <element name="forward" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz" />
+                <element name="reverse" compare="sim_size" file="clonefilter/Removed2_0001.2.2.fq.gz" />
+            </output_collection>
+	    <output_collection name="discarded_pair" type="paired">
+                <element name="forward" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz" />
+                <element name="reverse" compare="sim_size" file="clonefilter/Removed2_0001.2.2.fq.gz" />
+	    </output_collection>
+        </test>
+        <!-- kfreq output -->
+        <test>
+            <conditional name="input_type">
+                <param name="input_type_select" value="single" />
+                <param name="samples" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
             </conditional>
             <section name="options_kmer_char">
                 <param name="write_k_freq" value="--write_k_freq" />
             </section>
             <output name="kfreq" file="kmerfilter/kfreq.tsv"/>
         </test>
-	<!--<test>
-            <conditional name="data_type">
-                <param name="dt_select" value="single" />
-                <param name="fname" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
-                <param name="barcode_encoding" value="\-\-inline_null" />
-                
-                </conditional>
-            <output name="clean" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz"/>
-        </test>
-        <test>
-            <conditional name="data_type">
-                <param name="dt_select" value="pair" />
-                <param name="fwd" ftype="fastqsanger" value="clonefilter/R1_0001.1.fq.gz" />
-                <param name="rev" ftype="fastqsanger" value="clonefilter/R2_0001.2.fq.gz" />
+        <!-- kfreqdist output -->
+	<test>
+            <conditional name="input_type">
+                <param name="input_type_select" value="single" />
+                <param name="samples" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
             </conditional>
-            <output name="clean_fwd" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz"/>
-            <output name="clean_rev" compare="sim_size" file="clonefilter/Removed2_0001.2.2.fq.gz"/>
+            <section name="options_kmer_char">
+                <param name="k_dist" value="--k_dist" />
+            </section>
+            <output name="kfreqdist" file="kmerfilter/kfreqdist.tsv"/>
         </test>
-        <test>
-            <conditional name="data_type">
-                <param name="dt_select" value="pair" />
-                <param name="fwd" ftype="fastqsanger.gz" value="clonefilter/R1_0001.1.fq.gz" />
-                <param name="rev" ftype="fastqsanger.gz" value="clonefilter/R2_0001.2.fq.gz" />
-            </conditional>
-            <output name="clean_fwd" compare="sim_size" file="clonefilter/Removed1_0001.1.1.fq.gz"/>
-            <output name="clean_rev" compare="sim_size" file="clonefilter/Removed2_0001.2.2.fq.gz"/>
-    </test>-->
     </tests>
     <help>
 <![CDATA[

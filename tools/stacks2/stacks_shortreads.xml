@@ -6,7 +6,6 @@
         <import>macros_process.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="stdio"/>
     <expand macro="version_cmd"/>
     <command detect_errors="aggressive"><![CDATA[
 @CLEAN_EXT@
@@ -110,81 +109,7 @@ $options_advanced.no_overhang
                 </element>
             </output_collection>
         </test>
-<!--        <test>-->
-<!--            <param name="options_type_selector" value="single"/>-->
-<!--            <param name="input_single" ftype="fastqsanger.gz" value="procrad/R1.fq.gzip"/>-->
-<!--            <param name="barcode" value="procrad/barcodes"/>-->
-<!--            <param name="discard" value="true"/>-->
-<!--            <param name="capture" value="true"/>-->
-<!--            <param name="outype" value="gzfastq"/>-->
-<!--            <output name="output_log" file="shortreads/process_shortreads.out" lines_diff="6"/>-->
-<!--            <output_collection name="demultiplexed">-->
-<!--                <element name="PopA_01" ftype="fastqsanger.gz" md5="c7250f50138cbca747b85223aaae9565"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="discarded">-->
-<!--                <element name="R1" ftype="fastqsanger" md5="786b30d864332a2d56d9179f0a53add4"/>-->
-<!--            </output_collection>-->
-<!--        </test>-->
-<!--        <test>-->
-<!--            <param name="options_type_selector" value="paired"/>-->
-<!--            <param name="inputs_paired1" ftype="fastqsanger" value="procrad/R1.fq"/>-->
-<!--            <param name="inputs_paired2" ftype="fastqsanger" value="procrad/R2.fq"/>-->
-<!--            <param name="barcode" value="procrad/barcodes"/>-->
-<!--            <param name="discard" value="true"/>-->
-<!--            <param name="capture" value="true"/>-->
-<!--            <output name="output_log" file="shortreads/process_shortreads_paired.out" lines_diff="4"/>-->
-<!--            <output_collection name="demultiplexed">-->
-<!--                <element name="PopA_01.1" file="demultiplexed/PopA_01.1.fq"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="remaining">-->
-<!--                <element name="PopA_01.rem.2" file="demultiplexed/PopA_01.rem.2.fq"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="discarded">-->
-<!--                <element name="R1" file="procrad/R1.fq.discards"/>-->
-<!--            </output_collection>-->
-<!--        </test>-->
-<!--        <test>-->
-<!--            <param name="options_type_selector" value="paired"/>-->
-<!--            <param name="inputs_paired1" ftype="fastqsanger" value="procrad/R1.fq"/>-->
-<!--            <param name="inputs_paired2" ftype="fastqsanger" value="procrad/R2.fq"/>-->
-<!--            <param name="barcode" value="procrad/barcodes"/>-->
-<!--            <param name="discard" value="true"/>-->
-<!--            <param name="capture" value="true"/>-->
-<!--            <param name="retain_header" value="true"/>-->
-<!--            <output name="output_log" file="shortreads/process_shortreads_paired.out" lines_diff="4"/>-->
-<!--            <output_collection name="demultiplexed">-->
-<!--                <element name="PopA_01.1" file="demultiplexed/PopA_01.1.fq.header"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="remaining">-->
-<!--                <element name="PopA_01.rem.2" file="demultiplexed/PopA_01.rem.2.fq.header"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="discarded">-->
-<!--                <element name="R1" file="procrad/R1.fq.discards"/>-->
-<!--            </output_collection>-->
-<!--        </test>-->
-<!--        <test>-->
-<!--            <param name="options_type_selector" value="paired"/>-->
-<!--            <param name="inputs_paired1" ftype="fastqsanger" value="procrad/R1.fq"/>-->
-<!--            <param name="inputs_paired2" ftype="fastqsanger" value="procrad/R2.fq"/>-->
-<!--            <param name="barcode" value="procrad/barcodes"/>-->
-<!--            <param name="discard" value="true"/>-->
-<!--            <param name="capture" value="true"/>-->
-<!--            <param name="outype" value="fasta"/>-->
-<!--            <output name="output_log" file="shortreads/process_shortreads_paired.out" lines_diff="4"/>-->
-<!--            <output_collection name="demultiplexed">-->
-<!--                <element name="PopA_01.1" file="demultiplexed/PopA_01.1.fa"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="remaining">-->
-<!--                <element name="PopA_01.rem.2" file="demultiplexed/PopA_01.rem.2.fa"/>-->
-<!--            </output_collection>-->
-<!--            <output_collection name="discarded">-->
-<!--                <element name="R1" file="procrad/R1.fa.discards"/>-->
-<!--            </output_collection>-->
-<!--        </test>-->
     </tests>
-
-
-
     <help>
 <![CDATA[
 .. class:: infomark

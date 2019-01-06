@@ -8,14 +8,7 @@
     </xml>
 
     <token name="@STACKS_VERSION@">2.2</token>
-    <token name="@WRAPPER_VERSION@">2</token>
-
-    <xml name="stdio">
-        <stdio>
-            <exit_code range="1:" level="fatal" description="Error in Stacks execution" />
-        </stdio>
-    </xml>
-
+    <token name="@WRAPPER_VERSION@">0</token>
     <xml name="citation">
         <citations>
             <citation type="doi">10.1111/mec.12354</citation>
@@ -142,8 +135,30 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
         <param name="input_aln" format="tabular,txt" type="data_collection" collection_type="list" label="Output from previous Stacks pipeline steps (e.g. gstacks, denovo_map, or refmap)" argument="-P" />
     </xml>
 
+    <!-- fastq input w pair and barcode options
+	 used in clone filter and kmerfilter-->
+    <xml name="fastq_input_pair_bc">
+        <conditional name="input_type">
+            <param name="input_type_select" type="select" label="Single or Paired-end">
+                <option value="single">Single</option>
+                <option value="pair">Pair</option>
+            </param>
+            <when value="single">
+                <param name="samples" type="data" format="fastqsanger,fastqsanger.gz" label="FASTQ" />
+                <param name="barcode_encoding" type="select" label="Barcode location">
+                    <expand macro="barcode_encoding_single" type="Random oligo"/>
+                </param>
+            </when>
+	    <when value="pair">
+		<param name="samples" type="data_collection" collection_type="paired" label="Input FASTQs" format="fastqsanger,fastqsanger.gz"/>
+                <param name="barcode_encoding" type="select" label="Barcode location">
+                    <expand macro="barcode_encoding_pair" type="Random oligo"/>
+                </param>
+            </when>
+        </conditional>
+    </xml>
 
-    <!-- fastq input -->
+    <!-- fastq input (used in denovomap, tsv2bam, ustacks) -->
     <xml name="fastq_input_macro" token_fastq_optional="false">
         <conditional name="input_type">
             <param name="input_type_selector" type="select" label="Short read data from individuals" help="Single end data or forward reads. If a paired list is provided only the forward reads are used in ustacks">
@@ -257,7 +272,7 @@ $identifier#slurp
     <!-- ustacks outputs collection containing SAMPLE.tags.tsv, SAMPLE.snps.tsv, SAMPLE.alleles.tsv (SAMPLE!=catalog) -->
     <!-- TODO tags, snps, and alleles could go to sub collections; same for other tools -->
     <xml name="ustacks_outputs_macro" token_tooladd="">
-        <collection name="tabs" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Loci per sample">
+        <collection name="tabs" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Loci and polymorphism">
             <discover_datasets pattern="(?P&lt;name&gt;(?!catalog).+\.tags)\.tsv$" ext="tabular" directory="stacks_outputs" />
             <discover_datasets pattern="(?P&lt;name&gt;(?!catalog).+\.snps)\.tsv$" ext="tabular" directory="stacks_outputs" />
             <discover_datasets pattern="(?P&lt;name&gt;(?!catalog).+\.alleles)\.tsv$" ext="tabular" directory="stacks_outputs" />
@@ -277,7 +292,7 @@ $identifier#slurp
     </xml>
     <!-- tsv2bam outputs collection containing SAMPLE.matches.bam -->
     <xml name="tsv2bam_outputs_macro" token_tooladd="">
-        <collection name="bams" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Loci">
+        <collection name="bams" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Matches to the catalog (bam)">
             <discover_datasets pattern="(?P&lt;name&gt;.+\.matches)\.bam$" ext="bam" directory="stacks_outputs" />
         </collection>
     </xml>

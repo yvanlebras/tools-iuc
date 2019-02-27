@@ -1,5 +1,5 @@
 <!-- this is essentially a copy of stacks_procrad minus the unsupported options -->
-<tool id="stacks2_shortreads" name="Stacks2: process shortreads" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
+<tool id="stacks2_shortreads" name="Stacks2: process shortreads" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
 <description>fast cleaning of randomly sheared genomic or transcriptomic data</description>
     <macros>
         <import>macros.xml</import>
@@ -8,9 +8,13 @@
     <expand macro="requirements"/>
     <expand macro="version_cmd"/>
     <command detect_errors="aggressive"><![CDATA[
-@CLEAN_EXT@
+@FASTQ_INPUT_FUNCTIONS@
+
 mkdir stacks_inputs stacks_outputs &&
-@FASTQ_INPUT_PREPROC@
+
+#set ($link_command, $inputype) = $fastq_input_nonbatch( $input_type.fqinputs, $input_type.input_type_select, "_R%d_0" )
+$link_command
+
 
 process_shortreads
 
@@ -32,28 +36,28 @@ $options_advanced.no_overhang
     ]]></command>
 
     <inputs>
-        <expand macro="process_inputs"/>
+        <expand macro="fastq_input_bc_file" multiple="true" listtype="list:paired"/>
         <section name="options_advanced" title="advanced options" expanded="False">
-	    <expand macro="common_advanced"/>
-	    <param argument="--no_read_trimming" type="boolean" checked="false" truevalue="--no_read_trimming" falsevalue="" label="do not trim low quality reads, just discard them" />
-	    <param argument="--mate-pair" name="mate_pair" type="boolean" checked="false" truevalue="--mate-pair" falsevalue="" label="raw reads are circularized mate-pair data, first read will be reverse complemented" />
-	    <param argument="--no_overhang" type="boolean" checked="false" truevalue="--no_overhang" falsevalue="" label="data does not contain an overhang nucleotide between barcode and seqeunce" />
-	    <expand macro="rescue_barcode"/>
-	    <expand macro="process_adapter"/>
+            <expand macro="common_advanced"/>
+            <param argument="--no_read_trimming" type="boolean" checked="false" truevalue="--no_read_trimming" falsevalue="" label="Do not trim low quality reads, just discard them" />
+            <param argument="--mate-pair" name="mate_pair" type="boolean" checked="false" truevalue="--mate-pair" falsevalue="" label="Raw reads are circularized mate-pair data, first read will be reverse complemented" />
+            <param argument="--no_overhang" type="boolean" checked="false" truevalue="--no_overhang" falsevalue="" label="Data does not contain an overhang nucleotide between barcode and seqeunce" />
+            <expand macro="rescue_barcode"/>
+            <expand macro="process_adapter"/>
         </section>
-	<expand macro="process_filter"/>
-	<expand macro="process_output_types"/>
+        <expand macro="process_filter"/>
+        <expand macro="process_output_types"/>
     </inputs>
 
     <outputs>
         <data format="txt" name="output_log" label="${tool.name} on ${on_string} log file" from_work_dir="stacks_outputs/process_shortreads.log" />
-	<expand macro="process_outputs"/>
+        <expand macro="process_outputs"/>
     </outputs>
 
     <tests>
-	<!-- test single end, default options -->
+        <!-- test single end, default options -->
         <test>
-            <param name="input_type|options_type_selector" value="single"/>
+            <param name="input_type|input_type_select" value="single"/>
             <param name="input_type|fqinputs" ftype="fastqsanger" value="procrad/R1.fq"/>
             <param name="input_type|barcode_encoding" value="--inline_null"/>
             <param name="barcode" value="procrad/barcodes"/>
@@ -63,9 +67,9 @@ $options_advanced.no_overhang
                 <element name="PopA_01" file="shortreads/PopA_01.fq" ftype="fastqsanger" />
             </output_collection>
         </test>
-	<!-- test single end, default options -->
+        <!-- test single end, default options -->
         <test>
-            <param name="input_type|options_type_selector" value="paired"/>
+            <param name="input_type|input_type_select" value="paired"/>
             <param name="input_type|fqinputs">
                 <collection type="list:paired">
                     <element name="reads">
@@ -79,10 +83,10 @@ $options_advanced.no_overhang
             <param name="input_type|barcode_encoding" value="--inline_null"/>
             <param name="barcode" value="procrad/barcodes"/>
             <param name="capture" value="true"/>
-	    <param name="no_read_trimming" value="--no_read_trimming" />
-	    <param name="mate_pair" value="--mate-pair" />
-	    <param name="no_overhang" value="--no_overhang" />
-	    <param name="outype" value="gzfastq"/>
+            <param name="no_read_trimming" value="--no_read_trimming" />
+            <param name="mate_pair" value="--mate-pair" />
+            <param name="no_overhang" value="--no_overhang" />
+            <param name="outype" value="gzfastq"/>
             <param name="add_log" value="yes" />
             <assert_command>
                 <has_text text="--no_read_trimming" />
@@ -116,7 +120,7 @@ $options_advanced.no_overhang
 
 **What it does**
 
-erforms the same task as process_radtags for fast cleaning of randomly sheared genomic or transcriptomic data, not for RAD data.
+Performs the same task as process_radtags for fast cleaning of randomly sheared genomic or transcriptomic data, not for RAD data.
 
 **Help**
 

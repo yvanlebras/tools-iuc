@@ -1,10 +1,10 @@
-populations v2.2, executed 2018-11-27 19:48:37
-/home/berntm/miniconda3/envs/__stacks@2.2/bin/populations -P stacks_outputs -M /tmp/tmpSlCHrR/files/000/dataset_3.dat -t 1
+populations v2.3b, executed 2019-02-25 23:06:32
+populations -t 1 -P stacks_inputs -O stacks_outputs -M /tmp/tmp4FNQre/files/000/dataset_3.dat -p 1 -r 0.0 --min_maf 0.0 --min_mac 0 --merge_prune_lim 1.0
 Locus/sample distributions will be written to 'stacks_outputs/populations.log.distribs'.
 populations parameters selected:
   Percent samples limit per population: 0
   Locus Population limit: 1
-  Log liklihood filtering: off; threshold: 0
+  Percent samples overall: 0
   Minor allele frequency cutoff: 0
   Maximum observed heterozygosity cutoff: 1
   Applying Fst correction: none.
@@ -35,9 +35,13 @@ Now processing...
 Batch 1 
 
 Removed 0 loci that did not pass sample/population constraints from 3 loci.
-Kept 3 loci, composed of 282 sites; 0 of those sites were filtered, 2 variant sites remained.
-Mean genotyped sites per locus: 94.00bp (stderr 0.00).
+Kept 3 loci, composed of 613 sites; 0 of those sites were filtered, 6 variant sites remained.
+Number of loci with PE contig: 3.00 (100.0%);
+  Mean length of loci: 194.33bp (stderr 0.33);
+Number of loci with SE/PE overlap: 0.00 (0.0%);
+  Mean length of overlapping loci: -nanbp (stderr -0.00); mean overlap: -nanbp (stderr -0.00);
+Mean genotyped sites per locus: 194.33bp (stderr 0.33).
 
 Population summary statistics (more detail in populations.sumstats_summary.tsv):
-  1: 2 samples per locus; pi: 0.66667; all/variant/polymorphic sites: 282/2/2; private alleles: 0
+  1: 2 samples per locus; pi: 0.61111; all/variant/polymorphic sites: 583/6/6; private alleles: 0
 Populations is done.

@@ -1,5 +1,5 @@
 ustacks parameters selected:
-  Input file: 'stacks_inputs/PopA_01.1.fq'
+  Input file: 'stacks_inputs/PopA_01.1.fastq'
   Sample ID: 1
   Min depth of coverage to create a stack (m): 3
   Repeat removal algorithm: enabled
@@ -45,7 +45,7 @@ Writing tags, SNPs, and alleles files...
 Refetching read IDs...done.
 ustacks is done.
 ustacks parameters selected:
-  Input file: 'stacks_inputs/PopA_02.1.fq'
+  Input file: 'stacks_inputs/PopA_02.1.fastq'
   Sample ID: 2
   Min depth of coverage to create a stack (m): 3
   Repeat removal algorithm: enabled

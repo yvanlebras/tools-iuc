@@ -7,8 +7,11 @@
         </requirements>
     </xml>
 
-    <token name="@STACKS_VERSION@">2.2</token>
+    <token name="@STACKS_VERSION@">2.3b</token>
     <token name="@WRAPPER_VERSION@">0</token>
+    <!-- fix to 18.01 since https://github.com/galaxyproject/galaxy/pull/7032 -->
+    <token name="@PROFILE@">18.01</token>
+    
     <xml name="citation">
         <citations>
             <citation type="doi">10.1111/mec.12354</citation>
@@ -44,8 +47,8 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
 `Stacks google group <http://groups.google.com/group/stacks-users>`_
 ]]></token>
 
+    <!-- enzyme list for procrad and denovo -->
     <xml name="enzymes">
-
         <option value="">Unspecified</option>
         <option value="aciI">aciI</option>
         <option value="ageI">ageI</option>
@@ -54,7 +57,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
         <option value="apeKI">apeKI</option>
         <option value="apoI">apoI</option>
         <option value="aseI">aseI</option>
-	<option value="bamHI">bamHI</option>
+        <option value="bamHI">bamHI</option>
         <option value="bbvCI">bbvCI</option>
         <option value="bfaI">bfaI</option>
         <option value="bfuCI">bfuCI</option>
@@ -86,7 +89,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
         <option value="nlaIII">nlaIII</option>
         <option value="notI">notI</option>
         <option value="nsiI">nsiI</option>
-	<option value="nspI">nspI</option>
+        <option value="nspI">nspI</option>
         <option value="pstI">pstI</option>
         <option value="rsaI">rsaI</option>
         <option value="sacI">sacI</option>
@@ -113,7 +116,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
         #end if
     ]]></token>
     <xml name="in_log">
-        <param name="add_log" type="boolean" checked="false" truevalue="yes" falsevalue="no" label="Add log output as data set" />
+        <param name="add_log" type="boolean" checked="false" truevalue="yes" falsevalue="no" label="Add log output as dataset" />
     </xml>
     <xml name="out_log">
         <data format="txt" name="output_log" label="${tool.name} on ${on_string} log file">
@@ -122,134 +125,245 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
     </xml>
 
     <!-- inputs from previous pipeline steps -->
-    <xml name="input_cat_macro">
-        <param name="input_cat" format="tabular,txt" type="data_collection" collection_type="list" label="Catalog files" help="output from a previous Stacks pipeline steps e.g. denovo_map, refmap or cstacks" />
+    <xml name="input_stacks_macro">
+        <param name="input_stacks" format="tabular,txt" type="data_collection" collection_type="list" label="Loci and polymorphism" help="output from previous Stacks pipeline steps e.g. denovo_map, refmap or ustacks" />
     </xml>
-    <xml name="input_tags_macro">
-        <param name="input_tags" format="tabular,txt" type="data_collection" collection_type="list" label="Samples stacks" help="output from previous Stacks pipeline steps e.g. denovo_map, refmap or ustacks" />
+    <xml name="input_cat_macro">
+        <param name="input_cat" format="tabular,txt" type="data_collection" collection_type="list" label="Catalog of loci" help="output from a previous Stacks pipeline steps e.g. denovo_map, refmap or cstacks" />
     </xml>
     <xml name="input_matches_macro">
         <param name="input_matches" format="tabular,txt" type="data_collection" collection_type="list" label="Matches to the catalog" help="output from previous Stacks pipeline steps e.g. denovo_map, refmap or sstacks" />
     </xml>
+    <xml name="bam_input_macro">
+        <param name="input_bam" format="bam" type="data" multiple="true" optional="false" label="Aligned data" help="either the matches to the catalog (bam), i.e. tsv2bam, or reads aligned to a reference" />
+    </xml>
     <xml name="input_aln_macro">
-        <param name="input_aln" format="tabular,txt" type="data_collection" collection_type="list" label="Output from previous Stacks pipeline steps (e.g. gstacks, denovo_map, or refmap)" argument="-P" />
+        <param name="input_aln" format="tabular,txt" type="data_collection" collection_type="list" label="Assembled contigs and variant sites" help="output from previous Stacks pipeline steps (e.g. gstacks, denovo_map, or refmap)" argument="-P" />
     </xml>
 
-    <!-- fastq input w pair and barcode options
-	 used in clone filter and kmerfilter-->
-    <xml name="fastq_input_pair_bc">
+    <!-- code for creating links to the data sets from previous pipeline steps
+         - stacks (i.e ustacks outputs POP.tags.tsv, POP.alleles.tsv, POP.snps.tsv) 
+             also stores sample names in list (samples)
+         - cat (cstacks catalog.tags.tsv, catalog.alleles.tsv, catalog.snps.tsv)
+         - matches (sstacks POP.matches.tsv) -->
+    <token name="@LINK_STACKS_INPUT@"><![CDATA[
+    #set $samples = []
+    #for $input_file in $input_stacks
+        #set $filename = str($input_file.element_identifier)
+        #if not filename.endswith('.tsv')
+            #set $filename = $filename + ".tsv"
+        #end if
+        #if re.search('^(?!catalog).+\.(tags|alleles|snps)\.tsv$', $filename)
+            ln -s '${input_file}' 'stacks_inputs/$filename' &&
+            #if $filename.endswith('.tags.tsv')
+                $samples.append($filename[:-9])
+            #end if
+        #end if
+    #end for
+    ]]>
+    </token>
+    <token name="@LINK_CAT_INPUT@"><![CDATA[
+    #for $input_file in $input_cat
+        #set $filename = str($input_file.element_identifier)
+        #if not filename.endswith('.tsv')
+            #set $filename = $filename + ".tsv"
+        #end if
+        #if re.search('^catalog\.(tags|alleles|snps)\.tsv$', $filename)
+            ln -s '${input_file}' 'stacks_inputs/$filename' &&
+        #end if
+    #end for
+    ]]></token>
+    <token name="@LINK_MATCHES_INPUT@"><![CDATA[
+    #for $input_file in $input_matches
+        #set $filename = str($input_file.element_identifier)
+        #if not filename.endswith('.tsv')
+            #set $filename = $filename + ".tsv"
+        #end if
+        #if re.search('matches.tsv$', $filename)
+            ln -s '${input_file}' 'stacks_inputs/$filename' &&
+        #end if
+    #end for
+    ]]></token>
+
+    <!-- fastq input for process_radtags/shortreads (non-batch) and clone/kmerfilter (batch)
+         for batch processing chose multiple=false and paired
+         otherwise multiple=true and listtype=list:paired -->
+    <xml name="fastq_input_bc" token_multiple="false" token_listtype="paired">
         <conditional name="input_type">
-            <param name="input_type_select" type="select" label="Single or Paired-end">
-                <option value="single">Single</option>
-                <option value="pair">Pair</option>
+            <param name="input_type_select" type="select" label="Single-end or paired-end reads">
+                <option value="single" selected="True">Single-end files</option>
+                <option value="paired">Paired-end files</option>
             </param>
             <when value="single">
-                <param name="samples" type="data" format="fastqsanger,fastqsanger.gz" label="FASTQ" />
+                <param name="fqinputs" argument="-f" type="data" format="fastqsanger,fastqsanger.gz" multiple="@MULTIPLE@" label="Singles-end reads" />
                 <param name="barcode_encoding" type="select" label="Barcode location">
-                    <expand macro="barcode_encoding_single" type="Random oligo"/>
+                    <expand macro="barcode_encoding_single" type="Barcode" />
                 </param>
             </when>
-	    <when value="pair">
-		<param name="samples" type="data_collection" collection_type="paired" label="Input FASTQs" format="fastqsanger,fastqsanger.gz"/>
+            <when value="paired">
+                <param name="fqinputs" type="data_collection" collection_type="@LISTTYPE@" label="Paired-end reads" format="fastqsanger,fastqsanger.gz"/>
                 <param name="barcode_encoding" type="select" label="Barcode location">
-                    <expand macro="barcode_encoding_pair" type="Random oligo"/>
+                    <expand macro="barcode_encoding_pair" type="Barcode" />
                 </param>
             </when>
         </conditional>
+        <yield/>
+    </xml>
+
+    <xml name="fastq_input_bc_file" token_multiple="false" token_listtype="paired">
+        <expand macro="fastq_input_bc" multiple="@MULTIPLE@" listtype="@LISTTYPE@">
+            <param name="barcode" argument="-b" type="data"  format="tabular,txt" label="Barcode file" />
+        </expand>
     </xml>
 
     <!-- fastq input (used in denovomap, tsv2bam, ustacks) -->
-    <xml name="fastq_input_macro" token_fastq_optional="false">
+    <xml name="fastq_input" token_fastq_optional="false" token_help="">
         <conditional name="input_type">
-            <param name="input_type_selector" type="select" label="Short read data from individuals" help="Single end data or forward reads. If a paired list is provided only the forward reads are used in ustacks">
-                <option value="manual" selected="true">single end or forward reads</option>
-                <option value="list">(paired) data set list</option>
+            <param name="input_type_select" type="select" label="Short read data from individuals" help="@HELP@">
+                <option value="single" selected="true">single end or forward reads</option>
+                <option value="paired">(paired) dataset list</option>
             </param>
-            <when value="manual">
-                <param name="samples" argument="-f" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" type="data" label="Reads" multiple="true" optional="@FASTQ_OPTIONAL@"/>
+            <when value="single">
+                <param name="fqinputs" argument="-f" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" type="data" label="Reads" multiple="true" optional="@FASTQ_OPTIONAL@"/>
             </when>
-            <when value="list">
-                <param name="samples" argument="-f" type="data_collection" collection_type="list:paired" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" label="List for forward reads or read pairs" optional="@FASTQ_OPTIONAL@"/>
+            <when value="paired">
+                <param name="fqinputs" argument="-f" type="data_collection" collection_type="list:paired" format="fastqsanger,fastqsanger.gz,fasta,fasta.gz" label="List for forward reads or read pairs" optional="@FASTQ_OPTIONAL@"/>
             </when>
         </conditional>
     </xml>
-    <!-- requires a variable $read_direction=None|"forward"|"reverse" to be set 
-         appends noting/.1/.2 to the link name for accessing the fastq data
-         sets variables $name and $data_path-->
-    <token name="@FASTQ_INPUT@"><![CDATA[
-    ## TODO should use sample.identidfier if possible (see corresp. preproc macro)
-    #set $name = $clean_ext($sample.name)
-    #set $data_path = "stacks_inputs/" + $name
-    #if $sample.is_collection:
-        #set $cur_sample=$sample[$read_direction]
-    #else:
-        #set $cur_sample=$sample
-    #end if
-    #if $read_direction == "forward":
-        #set $data_path =  $data_path + ".1"
-    #elif $read_direction == "reverse":
-        #set $data_path =  $data_path + ".2"
-    #end if
-    #if $cur_sample.is_of_type('fastqsanger')
-        #set $data_path =  $data_path + ".fq"
-        #set inputype = "fastq"
-    #else if $cur_sample.is_of_type('fastqsanger.gz')
-        #set $data_path = $data_path + ".fq.gz"
-        #set inputype = "gzfastq"
-    #else if $cur_sample.is_of_type('fasta')
-        #set $data_path = $data_path + ".fa"
-        #set inputype = "fasta"
-    #else
-        #set $data_path = $data_path + ".fa.gz"
-        #set inputype = "gzfasta"
-    #end if
-    ln -s '$cur_sample' '${data_path}' &&
+
+    <!-- helper functions for linking fastq data sets -->
+    <token name="@FASTQ_INPUT_FUNCTIONS@"><![CDATA[
+    #from os.path import splitext
+    #import re
+
+    #def clean_ext($identifier)
+        #while $identifier.endswith(('.1', '.2', '.fa', '.fq', '.fasta', '.fastq', '.gz', '.gzip', '.sam', '.bam'))
+            #set $identifier = splitext($identifier)[0]
+        #end while
+$identifier#slurp
+    #end def
+
+    #def fastq_input_foo( $sample, $read_direction="", $infix="" )
+        #set $name = $clean_ext($sample.element_identifier)
+        #if $sample.is_collection:
+            #set $cur_sample=$sample[$read_direction]
+        #else:
+            #set $cur_sample=$sample
+        #end if
+    
+        #if $cur_sample.is_of_type('fastqsanger')
+            #set $ext =  "fastq"
+            #set $inputype = "fastq"
+        #else if $cur_sample.is_of_type('fastqsanger.gz')
+            #set $ext = "fastq.gz"
+            #set $inputype = "gzfastq"
+        #else if $cur_sample.is_of_type('fasta')
+            #set $ext = "fasta"
+            #set $inputype = "fasta"
+        #else if $cur_sample.is_of_type('fasta.gz')
+            #set $ext = "fasta.gz"
+            #set $inputype = "gzfasta"
+        #else
+            #set $inputype = "UNKNOWN"
+        #end if
+        #set $data_path = "stacks_inputs/"+$name+$infix+"."+$ext
+        #set $link_cmd = "ln -s '%s' '%s' &&" % ($cur_sample, $data_path)
+        #return ($link_cmd, $data_path, $name, $inputype)
+    #end def
+
+    ## fastq_input_batch determine link command, access path(s), and input type
+    ## for batch tools
+    ##
+    ## inputs
+    ## - sample data set / pair
+    ## - type "single" / "paired"
+    ## return (link_command, fwd_path, rev_path, inputype)
+    ## - link_command bash command(s) to link the data sets
+    ## - fwd_path file name of the link to the forward data set
+    ## - rev_path file name of the link to the forward data set (if type=paired)
+    ## - inputype input type as used in stacks ([gz]fast(a|q))
+    #def fastq_input_batch($sample, $type)
+        #if $type == "single"
+            #set ($link_cmd, $path, $name, $inputype) = $fastq_input_foo($sample, "", "")
+            #return ($link_cmd, $path, "", $inputype)
+        #else:
+            #set ($fwd_link_cmd, $fwd_path, $name, $inputype) = $fastq_input_foo($sample, "forward", ".1")
+            #set ($rev_link_cmd, $rev_path, $name, $inputype) = $fastq_input_foo($sample, "reverse", ".2")
+            #return ( $fwd_link_cmd+$rev_link_cmd, $fwd_path, $rev_path, $inputype)
+        #end if
+    #end def
+
+    ## fastq_input_nonbatch determine link command, access path(s), and input type
+    ## for non-batch tools (procrad, shortreads, denovomap the former need R[12]_ 
+    ## and the latter needs .[12])
+    ##
+    ## inputs
+    ## - samples list of data set / pair
+    ## - type "single" / "paired"
+    ## - infix_pattern pattern for the infix of the files (needs to contain %d which is replaced by 1/2)
+    ## return (link_command, inputype)
+    ## - link_command bash command(s) to link the data sets
+    ## - inputype input type as used in stacks ([gz]fast(a|q))
+    #def fastq_input_nonbatch( $samples, $type, $infix_pattern )
+        #set $link_command = ""
+        #for $sample in $samples
+            #if $type == "single"
+                #set ($lc, $path, $name, $inputype) = $fastq_input_foo($sample, "", "")
+                #set link_command += lc
+            #else:
+                #set ($lc, $path, $name, $inputype) = $fastq_input_foo($sample, "forward", $infix_pattern % (1))
+                #set link_command += lc
+                #set ($lc, $path, $name, $inputype) = $fastq_input_foo($sample, "reverse", $infix_pattern % (2))
+                #set link_command += lc
+            #end if
+        #end for
+        #return ($link_command, $inputype)
+    #end def
     ]]></token>
 
-    <!-- macro and token for BAM input-->
-    <xml name="bam_input_macro">
-        <param name="input_bam" format="bam" type="data" multiple="true" optional="false" label="BAM files" />
-    </xml>
+    <!-- macro and token for BAM input, for each bam file w identifier NAME
+       - creates a link NAME.bam <- bam_inputs/NAME.INFIX.bam
+       - appends -B bam_inputs/NAME.INFIX.bam to variable bamlist 
+
+         INFIX is set to"" per default, can be set with optional variable $infix 
+         only needed for gstacks in denovo mode which needs .matches.bam -->
     <token name="@BAM_INPUT@"><![CDATA[
     #set $bamlist = ""
     #for $bam in $input_bam:
-        #set $filename = $clean_ext($bam.element_identifier)+".bam"
-        #if re.search('.*\.bam$', $filename)
+        #if $bam.is_of_type('bam')
+            #set $filename = $clean_ext($bam.element_identifier)+".bam"
             ln -s '$bam' bam_inputs/$filename &&
             #set bamlist += " -B 'bam_inputs/"+$filename+"'"
         #end if
     #end for
     ]]></token>
 
-    <token name="@CLEAN_EXT@">
-        <![CDATA[
-        #from os.path import splitext
-        #import re
-        #def clean_ext($identifier)
-            #while $identifier.endswith(('.1', '.2', '.fa', '.fq', '.fasta', '.fastq', '.gz', '.gzip', '.sam', '.bam'))
-                #set $identifier = splitext($identifier)[0]
-            #end while
-$identifier#slurp
-        #end def
-        ]]>
-    </token>
+    <token name="@EXTRACT_VCF@"><![CDATA[
+    ## the catalog.calls output is a gzip-ed vcf extract it
+    ## to make it usable in Galaxy (with the downside that we 
+    ## need to gzip it again for downstream calls like populations)
+    && gunzip -c stacks_outputs/catalog.calls > stacks_outputs/catalog.calls.vcf
+    ]]></token>
+
+
 
     <!-- tokens and macros for gapped alignment options 
          the _onoff macro gives an empty conditional (which is not so nice 
          but allows to be used also in the full macro) -->
     <token name="@GAP_OPTIONS@"><![CDATA[
-#if $gapped.use_gapped == "yes"
-    --max_gaps $gapped.max_gaps
-    --min_aln_len $gapped.min_aln_len
-#else
-    --disable-gapped
-#end if
-]]></token>
+    #if $gapped.use_gapped == "yes"
+        --max_gaps $gapped.max_gaps
+        --min_aln_len $gapped.min_aln_len
+    #else
+        --disable-gapped
+    #end if
+    ]]></token>
     <token name="@GAP_OPTIONS_ONOFF@"><![CDATA[
-#if $gapped.use_gapped != "yes"
-    --disable-gapped
-#end if
-]]></token>
+    #if $gapped.use_gapped != "yes"
+        --disable-gapped
+    #end if
+    ]]></token>
     <xml name="gap_options">
         <expand macro="gap_options_onoff">
             <param argument="--max_gaps" type="float" value="2.0" label="Number of gaps allowed between stacks before merging"/>
@@ -268,6 +382,7 @@ $identifier#slurp
             </when>
         </conditional>
     </xml>
+
 
     <!-- ustacks outputs collection containing SAMPLE.tags.tsv, SAMPLE.snps.tsv, SAMPLE.alleles.tsv (SAMPLE!=catalog) -->
     <!-- TODO tags, snps, and alleles could go to sub collections; same for other tools -->
@@ -296,7 +411,21 @@ $identifier#slurp
             <discover_datasets pattern="(?P&lt;name&gt;.+\.matches)\.bam$" ext="bam" directory="stacks_outputs" />
         </collection>
     </xml>
-    <!-- gstacks outputs collection containing catalog.calls.vcf and catalog.fa.gz -->
+    <!-- gstacks outputs collection containing catalog.calls.vcf and catalog.fa.gz 
+         + optional output alignments.bam (if no popmap is given) and POP.alns.bam otherwise-->
+    <xml name="gstacks_outputs_full_macro" token_tooladd="">
+        <expand macro="gstacks_outputs_macro"/>    
+        <data format="txt" name="distribs" label="${tool.name} on ${on_string} log.distribs" from_work_dir="stacks_outputs/gstacks.log.distribs">
+            <filter>add_log_distribs</filter>
+        </data>
+        <collection name="gstacks_alns_out" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Read alignments">
+            <discover_datasets pattern="(?P&lt;name&gt;.*).alns.bam$" ext="bam" directory="stacks_outputs" />
+            <filter>mode_cond['mode_select'] == 'denovo' and mode_cond['advanced_cond']['advanced_select'] == "yes" and mode_cond['advanced_cond']['write_alignments'] != "" and popmap!=None</filter>
+        </collection>
+        <data name="gstacks_aln_out" format="bam" label="${tool.name} @TOOLADD@ on ${on_string} Read alignment" from_work_dir="stacks_outputs/alignments.bam">
+            <filter>mode_cond['mode_select'] == 'denovo' and mode_cond['advanced_cond']['advanced_select'] == "yes" and mode_cond['advanced_cond']['write_alignments'] != "" and popmap==None</filter>
+        </data>
+    </xml>
     <xml name="gstacks_outputs_macro" token_tooladd="">
         <collection name="gstacks_out" type="list" label="${tool.name} @TOOLADD@ on ${on_string} Assembled contigs and variant sites">
             <discover_datasets pattern="(?P&lt;name&gt;catalog\.calls\.vcf)$" ext="vcf" directory="stacks_outputs" />
@@ -317,7 +446,7 @@ $identifier#slurp
     <xml name="populations_output_full">
         <expand macro="populations_output_light"/>
 
-        <!-- log_fst_comp	populations.fst_summary.tsv	populations.phistats_summary.tsv	populations.phistats.tsv-->
+        <!-- log_fst_comp populations.fst_summary.tsv populations.phistats_summary.tsv populations.phistats.tsv-->
         <data format="tabular" name="out_phistats" label="${tool.name} on ${on_string} Phi_st statistics" from_work_dir="stacks_outputs/populations.phistats.tsv">
             <filter>advanced_options['log_fst_comp'] and fstats_conditional['fstats']=='yes'</filter>
         </data>
@@ -328,9 +457,9 @@ $identifier#slurp
             <filter>advanced_options['log_fst_comp'] and fstats_conditional['fstats']=='yes'</filter>
         </data>
 
-        <!-- fasta_loci	populations.loci.fa
-             fasta_samples	populations.samples.fa
-             fasta_samples_raw	populations.samples-raw.fa-->
+        <!-- fasta_loci populations.loci.fa
+             fasta_samples populations.samples.fa
+             fasta_samples_raw populations.samples-raw.fa-->
         <data format="tabular" name="out_fasta_strict" label="${tool.name} on ${on_string} per-locus consensus sequences" from_work_dir="stacks_outputs/populations.loci.fa">
             <filter>populations_output['fasta_loci']</filter>
         </data>
@@ -341,8 +470,8 @@ $identifier#slurp
             <filter>populations_output['fasta_samples_raw']</filter>
         </data>
 
-        <!-- phylip	populations.fixed.phylip	populations.fixed.phylip.log
-             phylip_var	populations.var.phylip	populations.var.phylip.log-->
+        <!-- phylip populations.fixed.phylip populations.fixed.phylip.log
+             phylip_var populations.var.phylip populations.var.phylip.log-->
         <data format="tabular" name="out_phylip_all_pop_fix" label="${tool.name} on ${on_string} Phylip nucleotides that are fixed-within, and variant among populations" from_work_dir="stacks_outputs/populations.fixed.phylip">
             <filter>populations_output['phylip']</filter>
         </data>
@@ -356,7 +485,7 @@ $identifier#slurp
             <filter>populations_output['phylip_var']</filter>
         </data>
 
-        <!-- genepop	populations.haps.genepop populations.snps.genepop -->
+        <!-- genepop populations.haps.genepop populations.snps.genepop -->
         <data format="tabular" name="out_genepop_snps" label="${tool.name} on ${on_string} SNPs in GenePop format" from_work_dir="stacks_outputs/populations.snps.genepop">
             <filter>populations_output['genepop']</filter>
         </data>
@@ -364,7 +493,7 @@ $identifier#slurp
             <filter>populations_output['genepop']</filter>
         </data>
 
-        <!-- vcf	populations.haps.vcf populations.snps.vcf -->
+        <!-- vcf populations.haps.vcf populations.snps.vcf -->
         <data format="vcf" name="out_vcf_haplotypes_snps" label="${tool.name} on ${on_string} SNPs in VCF format" from_work_dir="stacks_outputs/populations.snps.vcf">
             <filter>populations_output['vcf']</filter>
         </data>
@@ -372,7 +501,7 @@ $identifier#slurp
             <filter>populations_output['vcf']</filter>
         </data>
 
-        <!--plink	populations.plink.map populations.plink.ped-->
+        <!--plink populations.plink.map populations.plink.ped-->
         <data format="tabular" name="out_plink_markers" label="${tool.name} on ${on_string} PLINK (makers)" from_work_dir="stacks_outputs/populations.plink.map">
             <filter>populations_output['plink']</filter>
         </data>
@@ -380,16 +509,20 @@ $identifier#slurp
             <filter>populations_output['plink']</filter>
         </data>
 
-        <!--structure	populations.structure-->
+        <!--structure populations.structure-->
         <data format="tabular" name="out_structure" label="${tool.name} on ${on_string} Structure format" from_work_dir="stacks_outputs/populations.structure">
             <filter>populations_output['structure']</filter>
         </data>
 
-        <!-- radpainter	populations.haps.radpainter -->
+        <!-- radpainter populations.haps.radpainter -->
         <data format="tabular" name="out_radpainter" label="${tool.name} on ${on_string} Radpainter format" from_work_dir="stacks_outputs/populations.haps.radpainter">
             <filter>populations_output['radpainter']</filter>
         </data>
 
+        <!-- treemix populations.treemix -->
+        <data format="tabular" name="out_treemix" label="${tool.name} on ${on_string} Treemix format" from_work_dir="stacks_outputs/populations.treemix">
+            <filter>populations_output['treemix']</filter>
+        </data>
     </xml>
 
     <xml name="snp_options_alpha">
@@ -412,8 +545,8 @@ $identifier#slurp
                 <expand macro="snp_options_alpha"/>
             </when>
             <when value="bounded">
-                <param argument="--bound_low" type="float" value="0.0" min="0.0" max="1.0" label="lower bound for epsilon, the error rate" help="between 0 and 1.0"/>
-                <param argument="--bound_high" type="float" value="1.0" min="0.0" max="1.0" label="upper bound for epsilon, the error rate" help="between 0 and 1.0" />
+                <param argument="--bound_low" type="float" value="0.0" min="0.0" max="1.0" label="Lower bound for epsilon, the error rate" help="between 0 and 1.0"/>
+                <param argument="--bound_high" type="float" value="1.0" min="0.0" max="1.0" label="Upper bound for epsilon, the error rate" help="between 0 and 1.0" />
                 <expand macro="snp_options_alpha"/>
             </when>
             <when value="fixed">
@@ -429,11 +562,8 @@ $identifier#slurp
 
     <!-- variant calling option for use in gstacks and denovomap -->
     <xml name="variant_calling_options_vg">
-        <param argument="--var-alpha" name="var_alpha" type="float" value="0.05" min="0" label="alpha threshold for discovering SNPs" />
-        <expand macro="variant_calling_options_g"/>
-    </xml>
-    <xml name="variant_calling_options_g">
-        <param argument="--gt-alpha" name="gt_alpha" type="float" value="0.05" min="0" label="alpha threshold for calling genotypes" />
+        <param argument="--var-alpha" name="var_alpha" type="float" value="0.01" min="0" label="Alpha threshold for discovering SNPs" />
+        <param argument="--gt-alpha" name="gt_alpha" type="float" value="0.05" min="0" label="Alpha threshold for calling genotypes" />
     </xml>
 
     <xml name="barcode_encoding_single" token_type="">

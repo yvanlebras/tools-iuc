@@ -1,65 +1,28 @@
-<tool id="stacks2_tsv2bam" name="Stacks2: tsv2bam" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
-    <description>oriented data by locus</description>
+<tool id="stacks2_tsv2bam" name="Stacks2: tsv2bam" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
+    <description>Sort reads by RAD locus</description>
     <macros>
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
     <expand macro="version_cmd"/>
     <command detect_errors="aggressive"><![CDATA[
-@CLEAN_EXT@
+@FASTQ_INPUT_FUNCTIONS@
 
 mkdir stacks_inputs stacks_outputs &&
 
-## TODO make token
-#set $catalog = ""
-#for $input_file in $input_cat
-    #set $filename = str($input_file.element_identifier)
-    #if not filename.endswith('.tsv')
-        #set $filename = $filename + ".tsv"
-    #end if
-    #if re.search('catalog\.[a-z]+(\.tsv)?$', $filename)
-        ln -s '${input_file}' 'stacks_inputs/$filename' &&
-        #if $filename.endswith('.tags.tsv')
-            #set catalog += " -c 'stacks_inputs/'"
-        #end if
-    #end if
-#end for
-
-## TODO make token
-#set $samples = ""
-#for $input_file in $input_tags
-    #set $filename = str($input_file.element_identifier)
-    #if not filename.endswith('.tsv')
-        #set $filename = $filename + ".tsv"
-    #end if
-    #if not re.search('catalog\.[a-z]+(\.tsv)?$', $filename)
-        ln -s '${input_file}' 'stacks_inputs/$filename' &&
-        #if $filename.endswith('.tags.tsv')
-            #set samples += " -s '"+$filename[:-9] + "'"
-        #end if
-    #end if
-#end for
-
-## TODO make token
-#for $input_file in $input_matches
-    #set $filename = str($input_file.element_identifier)
-    #if not filename.endswith('.tsv')
-        #set $filename = $filename + ".tsv"
-    #end if
-    #if re.search('matches.tsv$', $filename)
-        ln -s '${input_file}' 'stacks_inputs/$filename' &&
-    #end if
-#end for
+@LINK_STACKS_INPUT@
+@LINK_CAT_INPUT@
+@LINK_MATCHES_INPUT@
 
 ## link fastq files into stacks_inputs/
 #set $paired_reads=False
-#for $sample in $input_type.samples:
+#for $sample in $input_type.fqinputs:
     #if not $sample:
         #continue
     #end if
     #set $paired_reads=True
-    #set $read_direction="reverse"
-    @FASTQ_INPUT@
+    #set ($link_cmd, $data_path, $name, $inputype) = $fastq_input_foo($sample, "reverse", ".2")
+    $link_cmd
 #end for
 
 tsv2bam
@@ -67,7 +30,9 @@ tsv2bam
 #if $popmap
     -M '$popmap'
 #else
-    $samples
+    #for $sample in $samples
+        -s '$sample'
+    #end for
 #end if
 #if $paired_reads
     --pe-reads-dir stacks_inputs
@@ -77,18 +42,19 @@ tsv2bam
 ## - make stdout stderr
 ## - move the additional log file
 2>&1 
-&& mv stacks_inputs/tsv2bam.log $output_log
-&& mv stacks_inputs/*matches.bam stacks_outputs
 
+#if $output_log
+    && mv stacks_inputs/tsv2bam.log $output_log
+#end if
+&& mv stacks_inputs/*matches.bam stacks_outputs
 ]]></command>
 
     <inputs>
-        <!-- TODO make the inputs macros and use in other tools -->
+        <expand macro="input_stacks_macro"/>
         <expand macro="input_cat_macro"/>
-        <expand macro="input_tags_macro"/>
         <expand macro="input_matches_macro"/>
         <!-- TODO add BAM? -->
-        <expand macro="fastq_input_macro" fastq_optional="true"/>
+        <expand macro="fastq_input" fastq_optional="true" help="Paired end data or reverse reads. If a paired list is provided only the reverse reads are used in tsv2bam"/>
         <param name="popmap" type="data" format="tabular,txt" label="Population map" help="If set, matching will be done only for samples listed in this file" optional="true" argument="-M" />
         <expand macro="in_log"/>
     </inputs>
@@ -103,19 +69,19 @@ tsv2bam
        <test>
             <param name="input_cat">
                 <collection type="list">
-                    <element name="catalog.alleles.tsv" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
-                    <element name="catalog.snps.tsv" ftype="tabular" value="cstacks/catalog.snps.tsv" />
-                    <element name="catalog.tags.tsv" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
                </collection>
             </param>
-            <param name="input_tags">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="input_matches">
@@ -127,27 +93,27 @@ tsv2bam
             <param name="add_log" value="yes" />
             <output name="output_log" ftype="txt" file="tsv2bam/tsv2bam.log" lines_diff="2"/>
             <output_collection name="bams" type="list" count="2">
-                <element name="PopA_01.matches" file="tsv2bam/PopA_01.matches.bam" ftype="bam" compare="sim_size"/>
-                <element name="PopA_02.matches" file="tsv2bam/PopA_02.matches.bam" ftype="bam" compare="sim_size"  />
+                <element name="PopA_01.matches" file="tsv2bam/PopA_01.matches.bam" ftype="bam"/>
+                <element name="PopA_02.matches" file="tsv2bam/PopA_02.matches.bam" ftype="bam"/>
             </output_collection>
         </test>
         <!-- test w popmap, w reverse reads as multiple selection -->
        <test>
             <param name="input_cat">
                 <collection type="list">
-                    <element name="catalog.alleles.tsv" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
-                    <element name="catalog.snps.tsv" ftype="tabular" value="cstacks/catalog.snps.tsv" />
-                    <element name="catalog.tags.tsv" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
                </collection>
             </param>
-            <param name="input_tags">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="input_matches">
@@ -157,32 +123,29 @@ tsv2bam
                </collection>
             </param>
             <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
-            <param name="input_type|input_type_selector" value="manual"/>
-            <param name="input_type|samples" value="demultiplexed/PopA_01.2.fq,demultiplexed/PopA_02.2.fq" ftype="fastqsanger" />
+            <param name="input_type|input_type_select" value="single"/>
+            <param name="input_type|fqinputs" value="demultiplexed/PopA_01.2.fq,demultiplexed/PopA_02.2.fq" ftype="fastqsanger" />
             <param name="add_log" value="yes" />
             <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
-            <output_collection name="bams" type="list" count="2">
-                <element name="PopA_01.matches" file="tsv2bam/PopA_01.matches.bam" ftype="bam" compare="sim_size"/>
-                <element name="PopA_02.matches" file="tsv2bam/PopA_02.matches.bam" ftype="bam" compare="sim_size"  />
-            </output_collection>
+            <output_collection name="bams" type="list" count="2"/>
         </test>
         <!-- test w reverse reads as list -->
        <test>
             <param name="input_cat">
                 <collection type="list">
-                    <element name="catalog.alleles.tsv" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
-                    <element name="catalog.snps.tsv" ftype="tabular" value="cstacks/catalog.snps.tsv" />
-                    <element name="catalog.tags.tsv" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
                </collection>
             </param>
-            <param name="input_tags">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="input_matches">
@@ -191,8 +154,8 @@ tsv2bam
                     <element name="PopA_02.matches" ftype="tabular" value="sstacks/PopA_02.matches.tsv" />
                </collection>
             </param>
-            <param name="input_type|input_type_selector" value="list"/>
-            <param name="input_type|samples">
+            <param name="input_type|input_type_select" value="paired"/>
+            <param name="input_type|fqinputs">
                 <collection type="list">
                     <element name="PopA_01" value="demultiplexed/PopA_01.2.fq" ftype="fastqsanger" />
                     <element name="PopA_02" value="demultiplexed/PopA_02.2.fq" ftype="fastqsanger"/>
@@ -200,28 +163,25 @@ tsv2bam
             </param>
             <param name="add_log" value="yes" />
             <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
-            <output_collection name="bams" type="list" count="2">
-                <element name="PopA_01.matches" file="tsv2bam/PopA_01.matches.bam" ftype="bam" compare="sim_size"/>
-                <element name="PopA_02.matches" file="tsv2bam/PopA_02.matches.bam" ftype="bam" compare="sim_size"  />
-            </output_collection>
+            <output_collection name="bams" type="list" count="2"/>
         </test>
-        <!-- test w paired reads as paired data set list -->
+        <!-- test w paired reads as paired dataset list -->
        <test>
             <param name="input_cat">
                 <collection type="list">
-                    <element name="catalog.alleles.tsv" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
-                    <element name="catalog.snps.tsv" ftype="tabular" value="cstacks/catalog.snps.tsv" />
-                    <element name="catalog.tags.tsv" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
                </collection>
             </param>
-            <param name="input_tags">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="input_matches">
@@ -230,8 +190,8 @@ tsv2bam
                     <element name="PopA_02.matches" ftype="tabular" value="sstacks/PopA_02.matches.tsv" />
                </collection>
             </param>
-            <param name="input_type|input_type_selector" value="list"/>
-            <param name="input_type|samples">
+            <param name="input_type|input_type_select" value="paired"/>
+            <param name="input_type|fqinputs">
                 <collection type="list:paired">
                     <element name="PopA_01">
                         <collection type="paired">
@@ -249,10 +209,7 @@ tsv2bam
             </param>
             <param name="add_log" value="yes" />
             <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
-            <output_collection name="bams" type="list" count="2">
-                <element name="PopA_01.matches" file="tsv2bam/PopA_01.matches.bam" ftype="bam" compare="sim_size"/>
-                <element name="PopA_02.matches" file="tsv2bam/PopA_02.matches.bam" ftype="bam" compare="sim_size"  />
-            </output_collection>
+            <output_collection name="bams" type="list" count="2"/>
         </test>
     </tests>
 

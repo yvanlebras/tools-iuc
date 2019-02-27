@@ -1,5 +1,5 @@
-<tool id="stacks2_sstacks" name="Stacks2: sstacks" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
-    <description>match stacks to a catalog</description>
+<tool id="stacks2_sstacks" name="Stacks2: sstacks" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
+    <description>Match samples to the catalog</description>
     <macros>
         <import>macros.xml</import>
     </macros>
@@ -12,37 +12,8 @@ mkdir stacks_inputs stacks_outputs
 
 &&
 
-## TODO make sure that there is only a single catalog?
-#set $catalog = ""
-#for $input_file in $input_cat
-    #set $filename = str($input_file.element_identifier)
-    #if not filename.endswith('.tsv')
-        #set $filename = $filename + ".tsv"
-    #end if
-    ## TODO may be confused by catalog.calls from gstacks (maybe make .tsv not optional)
-    #if re.search('catalog\.[a-z]+(\.tsv)?$', $filename)
-        ln -s '${input_file}' 'stacks_inputs/$filename' &&
-
-        #if $filename.endswith('.tags.tsv')
-            #set catalog += " -c 'stacks_inputs/'"
-        #end if
-    #end if
-#end for
-
-#set $samples = ""
-#for $input_file in $input_tags
-    #set $filename = str($input_file.element_identifier)
-    #if not filename.endswith('.tsv')
-        #set $filename = $filename + ".tsv"
-    #end if
-    #if not re.search('catalog\.[a-z]+(\.tsv)?$', $filename)
-        ln -s '${input_file}' 'stacks_inputs/$filename' &&
-
-        #if $filename.endswith('.tags.tsv')
-            #set samples += " -s 'stacks_inputs/"+$filename[:-9] + "'"
-        #end if
-    #end if
-#end for
+@LINK_STACKS_INPUT@
+@LINK_CAT_INPUT@
 
 sstacks
 
@@ -52,8 +23,10 @@ sstacks
     -P stacks_inputs
     -M '$popmap'
 #else
-    $catalog
-    $samples
+    -c stacks_inputs/
+    #for $sample in $samples
+        -s 'stacks_inputs/$sample'
+    #end for
     -o stacks_outputs
 #end if
 
@@ -70,11 +43,10 @@ $x
     ]]></command>
 
     <inputs>
-	<expand macro="input_cat_macro"/>
-	<expand macro="input_tags_macro"/>
-
+        <expand macro="input_stacks_macro"/>
+        <expand macro="input_cat_macro"/>
         <param name="popmap" type="data" format="tabular,txt" label="Population map" help="If set, matching will be done only for samples listed in this file" optional="true" argument="-M" />
-        <param argument="-x" type="boolean" checked="false" truevalue="-x" falsevalue="" label="don't verify haplotype of matching locus" />
+        <param argument="-x" type="boolean" checked="true" truevalue="" falsevalue="-x" label="Verify haplotype of matching locus" />
         <expand macro="gap_options_onoff"/>
         <expand macro="in_log"/>
     </inputs>
@@ -85,27 +57,26 @@ $x
     </outputs>
 
     <tests>
-        <!-- test w default parameters -->
+        <!-- test w default parameters and popmap -->
         <test>
             <param name="input_cat">
                 <collection type="list">
-                    <element name="catalog.alleles.tsv" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
-                    <element name="catalog.snps.tsv" ftype="tabular" value="cstacks/catalog.snps.tsv" />
-                    <element name="catalog.tags.tsv" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
                </collection>
             </param>
-            <param name="input_tags">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <!-- TODO add test with results from full previous denovomap output also in cstacks <element name="PopA_01.matches.tsv" ftype="tabular" value="ustacks/PopA_01.matches.tsv" />-->
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <!-- <element name="PopA_02.matches.tsv" ftype="tabular" value="ustacks/PopA_02.matches.tsv" />-->
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
+            <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
             <param name="add_log" value="yes" />
             <assert_command>
                 <not_has_text text="-x" />
@@ -118,26 +89,55 @@ $x
                 <element name="PopA_02.matches" file="sstacks/PopA_02.matches.tsv" ftype="tabular" lines_diff="2"/>
             </output_collection>
         </test>
+        <!-- test w default parameters -->
+        <test>
+            <param name="input_cat">
+                <collection type="list">
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+               </collection>
+            </param>
+            <param name="input_stacks">
+                <collection type="list">
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+               </collection>
+            </param>
+            <param name="add_log" value="yes" />
+            <assert_command>
+                <not_has_text text="-x" />
+                <not_has_text text="--disable-gapped" />
+                <not_has_text text="-M" />
+            </assert_command>
+            <output name="output_log" ftype="txt"><assert_contents><has_text text="done." /></assert_contents></output>
+            <output_collection name="matches" type="list" count="2">
+                <element name="PopA_01.matches"><assert_contents><has_text text="generated on " /></assert_contents></element>
+                <element name="PopA_02.matches"><assert_contents><has_text text="generated on " /></assert_contents></element>
+            </output_collection>
+        </test>
 
         <!-- test w non default parameters and popmap-->
         <test>
             <param name="input_cat">
                 <collection type="list">
-                    <element name="catalog.alleles.tsv" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
-                    <element name="catalog.snps.tsv" ftype="tabular" value="cstacks/catalog.snps.tsv" />
-                    <element name="catalog.tags.tsv" ftype="tabular" value="cstacks/catalog.tags.tsv" />
+                    <element name="catalog.alleles" ftype="tabular" value="cstacks/catalog.alleles.tsv" />
+                    <element name="catalog.snps" ftype="tabular" value="cstacks/catalog.snps.tsv" />
+                    <element name="catalog.tags" ftype="tabular" value="cstacks/catalog.tags.tsv" />
                </collection>
             </param>
-            <param name="input_tags">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <!-- <element name="PopA_01.matches.tsv" ftype="tabular" value="ustacks/PopA_01.matches.tsv" />-->
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <!-- <element name="PopA_02.matches.tsv" ftype="tabular" value="ustacks/PopA_02.matches.tsv" />-->
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="gapped|use_gapped" value="yes" />
@@ -149,7 +149,7 @@ $x
                 <has_text text="--disable-gapped" />
                 <has_text text="-M" />
             </assert_command>
-            <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
+            <output name="output_log" ftype="txt"><assert_contents><has_text text="done." /></assert_contents></output>
             <output_collection name="matches" type="list" count="2">
                 <element name="PopA_01.matches"><assert_contents><has_text text="generated on " /></assert_contents></element>
                 <element name="PopA_02.matches"><assert_contents><has_text text="generated on " /></assert_contents></element>

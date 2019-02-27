@@ -1,25 +1,25 @@
-<tool id="stacks2_ustacks" name="Stacks2: ustacks" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
-    <description>align short reads into stacks</description>
+<tool id="stacks2_ustacks" name="Stacks2: ustacks" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
+    <description>Indentify unique stacks</description>
     <macros>
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
     <expand macro="version_cmd"/>
     <command detect_errors="aggressive"><![CDATA[
-@CLEAN_EXT@
+@FASTQ_INPUT_FUNCTIONS@
 
 mkdir stacks_inputs stacks_outputs
 
 &&
 
 #set $ID=1
-#for $sample in $input_type.samples
-    #set $read_direction="forward"
-    @FASTQ_INPUT@
+#for $sample in $input_type.fqinputs
+    #set ($create_links, $data_path, $name, $inputype) = $fastq_input_foo($sample, "forward", ".1")
+    $create_links
 
     ustacks
 
-    -f $data_path
+    -f '$data_path'
     -i $ID
     --name $name
     -m $m
@@ -63,17 +63,15 @@ mkdir stacks_inputs stacks_outputs
 
     #set $ID=$ID+1
 #end for
-@CAT_LOG_TO_STDERR@ &&
+@CAT_LOG_TO_STDERR@ 
 ## If input is in gz format, stacks will output gzipped files (no option to control this)
 #if $inputype.startswith('gz')
-    gunzip stacks_outputs/*.gz
-#else
-    true
+    && gunzip stacks_outputs/*.gz
 #end if
     ]]></command>
 
     <inputs>
-        <expand macro="fastq_input_macro"/>
+        <expand macro="fastq_input" help="Single end data or forward reads. If a paired list is provided only the forward reads are used in ustacks"/>
 
         <param argument="-m" type="integer" value="3" label="Minimum depth of coverage required to create a stack"/>
         <param argument="-M" type="integer" value="2" label="Maximum distance (in nucleotides) allowed between stacks"/>
@@ -83,7 +81,7 @@ mkdir stacks_inputs stacks_outputs
         <section name="assembly_options" title="SNP Model Options (ustacks options)" expanded="True">
             <param argument="--keep_high_cov" type="boolean" checked="false" truevalue="--keep_high_cov" falsevalue="" label="Disable the algorithm that removes highly-repetitive stacks and nearby errors. " />
             <param argument="-d" type="boolean" checked="false" truevalue="-d" falsevalue="" label="Enable the Deleveraging algorithm, used for resolving over merged tags" />
-            <param argument="--high_cov_thres" type="float" min="0.0" value="3.0" label="highly-repetitive stacks threshold" help="in standard deviation units"/>
+            <param argument="--high_cov_thres" type="float" min="0.0" value="3.0" label="Highly-repetitive stacks threshold" help="in standard deviation units"/>
             <param argument="--max_locus_stacks" type="integer" value="3" label="Maximum number of stacks at a single de novo locus"/>
             <param argument="--k_len" type="integer" value="" min="7" max="31" optional="true" label="K-mer size for matching between alleles and loci (automatically calculated by default)"/>
         </section>
@@ -102,12 +100,27 @@ mkdir stacks_inputs stacks_outputs
     </outputs>
 
     <tests>
-        <!-- manual selected list of elements + default args, test for file equality -->
+        <!-- paired list, default options, test for file equality -->
         <test>
-            <param name="input_type|input_type_selector" value="manual"/>
-            <param name="input_type|samples" value="demultiplexed/PopA_01.1.fq,demultiplexed/PopA_02.1.fq" ftype="fastqsanger" />
+            <param name="input_type|input_type_select" value="paired"/>
+            <param name="input_type|fqinputs">
+                <collection type="list:paired">
+                    <element name="PopA_01">
+                        <collection type="paired">
+                            <element name="forward" value="demultiplexed/PopA_01.1.fq" ftype="fastqsanger" />
+                            <element name="reverse" value="demultiplexed/PopA_01.2.fq" ftype="fastqsanger"/>
+                        </collection>
+                    </element>
+                    <element name="PopA_02">
+                        <collection type="paired">
+                            <element name="forward" value="demultiplexed/PopA_02.1.fq" ftype="fastqsanger" />
+                            <element name="reverse" value="demultiplexed/PopA_02.2.fq" ftype="fastqsanger"/>
+                        </collection>
+                    </element>
+                </collection>
+            </param>
             <param name="add_log" value="yes" />
-            <output name="output_log" ftype="txt" file="ustacks/ustacks.log" lines_diff="2"/>
+            <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
             <output_collection name="tabs" type="list" count="6">
                 <element name="PopA_01.tags" ftype="tabular" file="ustacks/PopA_01.tags.tsv" lines_diff="2"/>
                 <element name="PopA_01.snps" ftype="tabular" file="ustacks/PopA_01.snps.tsv" lines_diff="2"/>
@@ -117,10 +130,25 @@ mkdir stacks_inputs stacks_outputs
                 <element name="PopA_02.alleles" ftype="tabular" file="ustacks/PopA_02.alleles.tsv" lines_diff="2"/>
             </output_collection>
         </test>
+        <!-- manual selected list of elements + default args, test for file equality -->
+        <test>
+            <param name="input_type|input_type_select" value="single"/>
+            <param name="input_type|fqinputs" value="demultiplexed/PopA_01.1.fq,demultiplexed/PopA_02.1.fq" ftype="fastqsanger" />
+            <param name="add_log" value="yes" />
+            <output name="output_log" ftype="txt"><assert_contents><has_text text="ustacks is done."/></assert_contents></output>
+            <output_collection name="tabs" count="6">
+                <element name="PopA_01.tags"><assert_contents><has_text text="generated on " /></assert_contents></element>
+                <element name="PopA_01.snps"><assert_contents><has_text text="generated on " /></assert_contents></element>
+                <element name="PopA_01.alleles"><assert_contents><has_text text="generated on " /></assert_contents></element>
+                <element name="PopA_02.tags"><assert_contents><has_text text="generated on " /></assert_contents></element>
+                <element name="PopA_02.snps"><assert_contents><has_text text="generated on " /></assert_contents></element>
+                <element name="PopA_02.alleles"><assert_contents><has_text text="generated on " /></assert_contents></element>
+            </output_collection>
+        </test>
         <!-- manual selected list of elements + non-default short args, test for file presence -->
         <test>
-            <param name="input_type|input_type_selector" value="manual"/>
-            <param name="input_type|samples" value="demultiplexed/PopA_01.1.fq,demultiplexed/PopA_02.1.fq" ftype="fastqsanger" />
+            <param name="input_type|input_type_select" value="single"/>
+            <param name="input_type|fqinputs" value="demultiplexed/PopA_01.1.fq,demultiplexed/PopA_02.1.fq" ftype="fastqsanger" />
             <param name="-m" value="2" />
             <param name="-M" value="3" />
             <param name="-N" value="4"/>
@@ -134,7 +162,7 @@ mkdir stacks_inputs stacks_outputs
                 <has_text text="-R" />
                 <has_text text="-H" />
             </assert_command>
-            <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
+            <output name="output_log" ftype="txt"><assert_contents><has_text text="ustacks is done."/></assert_contents></output>
             <output_collection name="tabs" count="6">
                 <element name="PopA_01.tags"><assert_contents><has_text text="generated on " /></assert_contents></element>
                 <element name="PopA_01.snps"><assert_contents><has_text text="generated on " /></assert_contents></element>
@@ -146,8 +174,8 @@ mkdir stacks_inputs stacks_outputs
         </test>
         <!-- paired list, non-default model options, disabled gapped alignment, test for file presence -->
         <test>
-            <param name="input_type|input_type_selector" value="list"/>
-            <param name="input_type|samples">
+            <param name="input_type|input_type_select" value="paired"/>
+            <param name="input_type|fqinputs">
                 <collection type="list:paired">
                     <element name="PopA_01">
                         <collection type="paired">
@@ -180,7 +208,7 @@ mkdir stacks_inputs stacks_outputs
                 <has_text text="--bc_err_freq 0.1" />
                 <has_text text="--disable-gapped" />
             </assert_command>
-            <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
+            <output name="output_log" ftype="txt"><assert_contents><has_text text="ustacks is done."/></assert_contents></output>
             <output_collection name="tabs" count="6">
                 <element name="PopA_01.tags"><assert_contents><has_text text="generated on " /></assert_contents></element>
                 <element name="PopA_01.snps"><assert_contents><has_text text="generated on " /></assert_contents></element>
@@ -192,8 +220,8 @@ mkdir stacks_inputs stacks_outputs
         </test>
         <!-- list of fwd reads, nondefault assembly and gapped alignment options, test for file presence -->
         <test>
-            <param name="input_type|input_type_selector" value="list"/>
-            <param name="input_type|samples">
+            <param name="input_type|input_type_select" value="paired"/>
+            <param name="input_type|fqinputs">
                 <collection type="list">
                     <element name="PopA_01" value="demultiplexed/PopA_01.1.fq" ftype="fastqsanger" />
                     <element name="PopA_02" value="demultiplexed/PopA_02.1.fq" ftype="fastqsanger"/>
@@ -217,7 +245,7 @@ mkdir stacks_inputs stacks_outputs
                 <has_text text="--max_gaps 3" />
                 <has_text text="--min_aln_len 3" />
             </assert_command>
-            <output name="output_log"><assert_contents><has_text text="done." /></assert_contents></output>
+            <output name="output_log" ftype="txt"><assert_contents><has_text text="ustacks is done."/></assert_contents></output>
             <output_collection name="tabs" count="6">
                 <element name="PopA_01.tags"><assert_contents><has_text text="generated on " /></assert_contents></element>
                 <element name="PopA_01.snps"><assert_contents><has_text text="generated on " /></assert_contents></element>
@@ -241,7 +269,7 @@ The unique stacks program will take as input a set of short-read sequences and a
 
 **Input files**
 
-One or more FASTQ, FASTA files. Can be given by selecting them manually, as data set list, or paired data set list. Note, for the latter ustacks only uses the forward reads -- reverse reads are incorporated in tsv2bam.
+One or more FASTQ, FASTA files. Can be given by selecting them manually, as dataset list, or paired dataset list. Note, for the latter ustacks only uses the forward reads -- reverse reads are incorporated in tsv2bam.
 
 **Output files**
 

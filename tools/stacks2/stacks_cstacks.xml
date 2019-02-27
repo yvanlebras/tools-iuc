@@ -1,5 +1,5 @@
-<tool id="stacks2_cstacks" name="Stacks2: cstacks" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
-    <description>build a catalogue of loci</description>
+<tool id="stacks2_cstacks" name="Stacks2: cstacks" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
+    <description>Generate catalog of loci</description>
     <macros>
         <import>macros.xml</import>
     </macros>
@@ -11,27 +11,7 @@
 mkdir stacks_inputs stacks_outputs
 &&
 
-## for each input collection
-## - create links all tsv files that are not catalog
-##   (ustacks produces ony tags, alleles, snps, ie eventually 
-##    present catalogs are ignored)
-##   link name is element_identifier(.tsv)
-## - create -s sample1prefix -s sample2prefix .. 
-
-#set $samples = ""
-#for $input_file in $input_cat
-    #set $filename = str($input_file.element_identifier)
-    #if not filename.endswith('.tsv')
-        #set $filename = $filename + ".tsv"
-    #end if
-    #if not re.search('catalog\.[a-z]+(\.tsv)?$', $filename)
-        ln -s '${input_file}' 'stacks_inputs/$filename' &&
-
-        #if $filename.endswith('.tags.tsv')
-            #set samples += " -s 'stacks_inputs/" + $filename[:-9] + "'"
-        #end if
-    #end if
-#end for
+@LINK_STACKS_INPUT@
 
 cstacks
 
@@ -41,7 +21,9 @@ cstacks
     -P stacks_inputs
     -M '$popmap'
 #else
-    $samples
+    #for $sample in $samples
+        -s 'stacks_inputs/$sample'
+    #end for
     -o stacks_outputs
 #end if
 
@@ -66,15 +48,15 @@ $report_mmatches
     ]]></command>
 
     <inputs>
-	<expand macro="input_cat_macro"/>
+        <expand macro="input_stacks_macro"/>
 
         <param name="popmap" type="data" format="tabular,txt" label="Population map" help="If set, the catalog will be built from samples listed in this file" optional="true" argument="-M" />
 
         <param argument="-n" type="integer" value="1" label="Number of mismatches allowed between sample loci when building the catalog" help="(default 1; suggested: set to ustacks -M)"/>
 
         <expand macro="gap_options"/>
-        <param argument="--k_len" type="integer" min="5" max="31" value="" optional="true" label="k-mer size for matching between between catalog loci" help="default: automatic"/>
-        <param argument="--report_mmatches" type="boolean" checked="false" truevalue="--report_mmatches" falsevalue="" label="report query loci that match more than one catalog locus" />
+        <param argument="--k_len" type="integer" min="5" max="31" value="" optional="true" label="K-mer size for matching between between catalog loci" help="default: automatic"/>
+        <param argument="--report_mmatches" type="boolean" checked="false" truevalue="--report_mmatches" falsevalue="" label="Report query loci that match more than one catalog locus" />
         <expand macro="in_log"/>
     </inputs>
 
@@ -84,17 +66,37 @@ $report_mmatches
     </outputs>
 
     <tests>
-        <!-- TODO add test w popmap -->
+        <!-- test w default options + popmap -->
+        <test>
+            <param name="input_stacks">
+                <collection type="list">
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+               </collection>
+            </param>
+            <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
+            <param name="add_log" value="yes" />
+            <output name="output_log" ftype="txt" file="cstacks/cstacks.log"/>
+            <output_collection name="catalog" type="list">
+                <element name="catalog.alleles" file="cstacks/catalog.alleles.tsv" ftype="tabular" lines_diff="2"/>
+                <element name="catalog.snps" file="cstacks/catalog.snps.tsv" ftype="tabular" lines_diff="2" />
+                <element name="catalog.tags" file="cstacks/catalog.tags.tsv" ftype="tabular" lines_diff="2" />
+            </output_collection>
+        </test>
         <!-- test w default options -->
         <test>
-            <param name="input_cat">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="add_log" value="yes" />
@@ -107,14 +109,14 @@ $report_mmatches
         </test>
         <!-- test w non default options (wo gapped, because tested already in ustacks) -->
         <test>
-            <param name="input_cat">
+            <param name="input_stacks">
                 <collection type="list">
-                    <element name="PopA_01.alleles.tsv" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
-                    <element name="PopA_01.snps.tsv" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
-                    <element name="PopA_01.tags.tsv" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
-                    <element name="PopA_02.alleles.tsv" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
-                    <element name="PopA_02.snps.tsv" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
-                    <element name="PopA_02.tags.tsv" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
+                    <element name="PopA_01.alleles" ftype="tabular" value="ustacks/PopA_01.alleles.tsv" />
+                    <element name="PopA_01.snps" ftype="tabular" value="ustacks/PopA_01.snps.tsv" />
+                    <element name="PopA_01.tags" ftype="tabular" value="ustacks/PopA_01.tags.tsv" />
+                    <element name="PopA_02.alleles" ftype="tabular" value="ustacks/PopA_02.alleles.tsv" />
+                    <element name="PopA_02.snps" ftype="tabular" value="ustacks/PopA_02.snps.tsv" />
+                    <element name="PopA_02.tags" ftype="tabular" value="ustacks/PopA_02.tags.tsv" />
                </collection>
             </param>
             <param name="n" value="2"/>
@@ -146,25 +148,25 @@ A catalog can be built from any set of samples processed by ustacks. It will cre
 
 **Input files**
 
-Output from denovo_map, refmap, or ustacks
+Output from denovo_map or ustacks
 
 **Output files**
 
-- XXX.tags.tsv file:
+- catalog.tags file:
 
 See `Stacks output description <http://catchenlab.life.illinois.edu/stacks/manual/#files>`_
 
 Notes: For the tags file, each stack will start in the file with a consensus sequence for the entire stack followed by the flags for that stack. Then, each individual read that was merged into that stack will follow. The next stack will start with another consensus sequence.
 
 
-- XXX.snps.tsv file:
+- catalog.snps file:
 
 See `Stacks output description <http://catchenlab.life.illinois.edu/stacks/manual/#files>`_
 
 Notes: If a stack has two SNPs called within it, then there will be two lines in this file listing each one.
 
 
-- XXX.alleles.tsv file:
+- catalog.alleles file:
 
 See `Stacks output description <http://catchenlab.life.illinois.edu/stacks/manual/#files>`_
 

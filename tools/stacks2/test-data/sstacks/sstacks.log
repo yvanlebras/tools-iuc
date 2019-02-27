@@ -23,7 +23,7 @@ Out of 3 query loci, 0 gapped alignments attempted.
     0 loci contained SNPs unaccounted for in the catalog and were excluded.
     0 loci had no verified haplotypes.
     0 loci had inconsistent alignments to a catalog locus and were excluded.
-Outputing to file stacks_outputs/PopA_01.matches.tsv
+Outputing to file stacks_inputs/PopA_01.matches.tsv
 
 Processing sample 'stacks_inputs/PopA_02' [2 of 2]
   Parsing stacks_inputs/PopA_02.tags.tsv
@@ -43,6 +43,6 @@ Out of 3 query loci, 0 gapped alignments attempted.
     0 loci contained SNPs unaccounted for in the catalog and were excluded.
     0 loci had no verified haplotypes.
     0 loci had inconsistent alignments to a catalog locus and were excluded.
-Outputing to file stacks_outputs/PopA_02.matches.tsv
+Outputing to file stacks_inputs/PopA_02.matches.tsv
 
 sstacks is done.

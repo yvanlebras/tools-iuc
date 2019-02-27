@@ -1,4 +1,4 @@
-<tool id="stacks2_refmap" name="Stacks2: reference map" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
+<tool id="stacks2_refmap" name="Stacks2: reference map" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
     <description>the Stacks pipeline with a reference genome (ref_map.pl)</description>
     <macros>
         <import>macros.xml</import>
@@ -6,11 +6,11 @@
     <expand macro="requirements"/>
     <expand macro="version_cmd"/>
     <command detect_errors="aggressive"><![CDATA[
-@CLEAN_EXT@
+@FASTQ_INPUT_FUNCTIONS@
 mkdir bam_inputs stacks_outputs&&
 @BAM_INPUT@
 
-ref_map.pl 
+ref_map.pl
 --samples bam_inputs
 #if str($popmap) != 'None':
     --popmap '$popmap'
@@ -21,13 +21,17 @@ $paired_select
 --var-alpha $model_options.var_alpha
 --gt-alpha $model_options.gt_alpha
 
-&& mv stacks_outputs/ref_map.log $output_log
+@EXTRACT_VCF@
+
+#if $output_log
+    && mv stacks_outputs/ref_map.log $output_log
+#end if
     ]]></command>
 
     <inputs>
         <expand macro="bam_input_macro"/>
         <param argument="--popmap" type="data" format="tabular,txt" label="Population map" />
-        <param name="paired_select" type="select" label="paired end options" help="select single/paired for single end data or to select advanced paired end options, --unpaired: treat reverse reads as if they were forward reads; --ignore-pe-reads: ignore paired-end reads even if present in the input">
+        <param name="paired_select" type="select" label="Paired end options" help="select single/paired for single end data or to select advanced paired end options, --unpaired: treat reverse reads as if they were forward reads; --ignore-pe-reads: ignore paired-end reads even if present in the input">
             <option value="" selected="true">single/paired</option>
             <option value="--unpaired" selected="true">ignore read pairing (--unpaired)</option>
             <option value="--ignore-pe-reads" selected="true">ignore paired-end reads (--ignore-pe-reads)</option>
@@ -50,7 +54,16 @@ $paired_select
             <param name="popmap" ftype="tabular" value="denovo_map/popmap_cstacks.tsv" />
             <param name="add_log" value="yes" />
             <output ftype="txt" name="output_log"><assert_contents><has_text text="ref_map.pl is done." /></assert_contents></output>
-            <!-- TODO test for outputs -->
+            <output_collection name="gstacks_out" type="list" count="2">
+                <element name="catalog.calls.vcf" file="refmap/catalog.calls.vcf" ftype="vcf" lines_diff="2"/>
+                <element name="catalog.fa.gz" file="refmap/catalog.fa.gz" ftype="fasta.gz" compare="sim_size"/>
+            </output_collection>
+            <output ftype="tabular" name="out_haplotypes" value="refmap/populations.haplotypes.tsv"/>
+            <output ftype="tabular" name="out_hapstats" value="refmap/populations.hapstats.tsv"/>
+            <output ftype="txt" name="out_populations_log_distribs" value="refmap/populations.log.distribs"/>
+            <output ftype="tabular" name="out_sumstats_sum" value="refmap/populations.sumstats_summary.tsv"/>
+            <output ftype="tabular" name="out_sumstats" value="refmap/populations.sumstats.tsv"/>
+            <output ftype="tabular" name="out_sql" value="refmap/populations.markers.tsv"/>
         </test>
         <test>
             <param name="input_bam" ftype="bam" value="refmap/PopA_01.bam,refmap/PopA_02.bam"/>
@@ -65,6 +78,14 @@ $paired_select
             </assert_command>
             <param name="add_log" value="yes" />
             <output ftype="txt" name="output_log"><assert_contents><has_text text="ref_map.pl is done." /></assert_contents></output>
+            <output_collection name="gstacks_out" type="list" count="2"/>
+            <output ftype="tabular" name="out_haplotypes"><assert_contents><has_text text="#"/></assert_contents></output>
+            <output ftype="tabular" name="out_hapstats"><assert_contents><has_text text="#"/></assert_contents></output>
+            <output ftype="txt" name="out_populations_log_distribs"><assert_contents><has_text text="#"/></assert_contents></output>
+            <output ftype="tabular" name="out_sumstats_sum"><assert_contents><has_text text="#"/></assert_contents></output>
+            <output ftype="tabular" name="out_sumstats"><assert_contents><has_text text="#"/></assert_contents></output>
+            <output ftype="tabular" name="out_sql"><assert_contents><has_text text="#"/></assert_contents></output>
+
         </test>
     </tests>
 

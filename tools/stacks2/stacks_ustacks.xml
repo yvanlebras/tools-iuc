@@ -26,12 +26,12 @@ mkdir stacks_inputs stacks_outputs
     -M $M
     #if $N
         -N $N
-    #end if        
+    #end if
     -p \${GALAXY_SLOTS:-1}
     -t $inputype
     $R
     $H
-    
+
     ## Assembly
     $assembly_options.keep_high_cov
     --high_cov_thres $assembly_options.high_cov_thres
@@ -40,9 +40,9 @@ mkdir stacks_inputs stacks_outputs
     #if str($assembly_options.k_len)
         --k_len $assembly_options.k_len
     #end if
-    
+
     @GAP_OPTIONS@
-    
+
     ## snp_model
     #if str( $snp_options.select_model.model_type) == "bounded"
         --model_type bounded
@@ -56,14 +56,14 @@ mkdir stacks_inputs stacks_outputs
         --model_type fixed
         --bc_err_freq $bc_err_freq
     #end if
-    
+
     -o stacks_outputs
-    
+
     @TEE_APPEND_LOG@
 
     #set $ID=$ID+1
 #end for
-@CAT_LOG_TO_STDERR@ 
+@CAT_LOG_TO_STDERR@
 ## If input is in gz format, stacks will output gzipped files (no option to control this)
 #if $inputype.startswith('gz')
     && gunzip stacks_outputs/*.gz

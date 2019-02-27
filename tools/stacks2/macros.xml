@@ -11,7 +11,7 @@
     <token name="@WRAPPER_VERSION@">0</token>
     <!-- fix to 18.01 since https://github.com/galaxyproject/galaxy/pull/7032 -->
     <token name="@PROFILE@">18.01</token>
-    
+
     <xml name="citation">
         <citations>
             <citation type="doi">10.1111/mec.12354</citation>
@@ -112,7 +112,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
     ]]></token>
     <token name="@CAT_LOG_TO_STDERR@"><![CDATA[
         #if $output_log
-            cat $output_log 2>&1 
+            cat $output_log 2>&1
         #end if
     ]]></token>
     <xml name="in_log">
@@ -142,7 +142,7 @@ Stacks was developed by Julian Catchen with contributions from Angel Amores, Pau
     </xml>
 
     <!-- code for creating links to the data sets from previous pipeline steps
-         - stacks (i.e ustacks outputs POP.tags.tsv, POP.alleles.tsv, POP.snps.tsv) 
+         - stacks (i.e ustacks outputs POP.tags.tsv, POP.alleles.tsv, POP.snps.tsv)
              also stores sample names in list (samples)
          - cat (cstacks catalog.tags.tsv, catalog.alleles.tsv, catalog.snps.tsv)
          - matches (sstacks POP.matches.tsv) -->
@@ -251,7 +251,7 @@ $identifier#slurp
         #else:
             #set $cur_sample=$sample
         #end if
-    
+
         #if $cur_sample.is_of_type('fastqsanger')
             #set $ext =  "fastq"
             #set $inputype = "fastq"
@@ -295,7 +295,7 @@ $identifier#slurp
     #end def
 
     ## fastq_input_nonbatch determine link command, access path(s), and input type
-    ## for non-batch tools (procrad, shortreads, denovomap the former need R[12]_ 
+    ## for non-batch tools (procrad, shortreads, denovomap the former need R[12]_
     ## and the latter needs .[12])
     ##
     ## inputs
@@ -324,9 +324,9 @@ $identifier#slurp
 
     <!-- macro and token for BAM input, for each bam file w identifier NAME
        - creates a link NAME.bam <- bam_inputs/NAME.INFIX.bam
-       - appends -B bam_inputs/NAME.INFIX.bam to variable bamlist 
+       - appends -B bam_inputs/NAME.INFIX.bam to variable bamlist
 
-         INFIX is set to"" per default, can be set with optional variable $infix 
+         INFIX is set to"" per default, can be set with optional variable $infix
          only needed for gstacks in denovo mode which needs .matches.bam -->
     <token name="@BAM_INPUT@"><![CDATA[
     #set $bamlist = ""
@@ -341,15 +341,15 @@ $identifier#slurp
 
     <token name="@EXTRACT_VCF@"><![CDATA[
     ## the catalog.calls output is a gzip-ed vcf extract it
-    ## to make it usable in Galaxy (with the downside that we 
+    ## to make it usable in Galaxy (with the downside that we
     ## need to gzip it again for downstream calls like populations)
     && gunzip -c stacks_outputs/catalog.calls > stacks_outputs/catalog.calls.vcf
     ]]></token>
 
 
 
-    <!-- tokens and macros for gapped alignment options 
-         the _onoff macro gives an empty conditional (which is not so nice 
+    <!-- tokens and macros for gapped alignment options
+         the _onoff macro gives an empty conditional (which is not so nice
          but allows to be used also in the full macro) -->
     <token name="@GAP_OPTIONS@"><![CDATA[
     #if $gapped.use_gapped == "yes"
@@ -411,10 +411,10 @@ $identifier#slurp
             <discover_datasets pattern="(?P&lt;name&gt;.+\.matches)\.bam$" ext="bam" directory="stacks_outputs" />
         </collection>
     </xml>
-    <!-- gstacks outputs collection containing catalog.calls.vcf and catalog.fa.gz 
+    <!-- gstacks outputs collection containing catalog.calls.vcf and catalog.fa.gz
          + optional output alignments.bam (if no popmap is given) and POP.alns.bam otherwise-->
     <xml name="gstacks_outputs_full_macro" token_tooladd="">
-        <expand macro="gstacks_outputs_macro"/>    
+        <expand macro="gstacks_outputs_macro"/>
         <data format="txt" name="distribs" label="${tool.name} on ${on_string} log.distribs" from_work_dir="stacks_outputs/gstacks.log.distribs">
             <filter>add_log_distribs</filter>
         </data>
@@ -573,12 +573,12 @@ $identifier#slurp
     </xml>
 
     <xml name="barcode_encoding_pair" token_type="">
-        <expand macro="barcode_encoding_single" type="@TYPE@">    
+        <expand macro="barcode_encoding_single" type="@TYPE@">
             <option value="--null_index">@TYPE@ is provded in FASTQ header (Illumina i7 read if both i5 and i7 read are provided) (--null_index)</option>
             <option value="--inline_inline">@TYPE@ is inline with sequence, occurs on single and paired-end read (--inline_inline)</option>
             <option value="--index_index">@TYPE@ is provded in FASTQ header (Illumina i5 and i7 reads) (--index_index)</option>
             <option value="--inline_index">@TYPE@ is inline with sequence on single-end read and occurs in FASTQ header (from either i5 or i7 read) (--inline_index)</option>
             <option value="--index_inline">@TYPE@ occurs in FASTQ header (Illumina i5 or i7 read) and is inline with sequence on single-end read (if single read data) or paired-end read (if paired data) (--index_inline)</option>
-        </expand>    
+        </expand>
     </xml>
 </macros>

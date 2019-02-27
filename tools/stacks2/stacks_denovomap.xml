@@ -28,7 +28,7 @@ denovo_map.pl
 $paired
 
 ## the catalog.calls output is a gzip-ed vcf extract it
-## to make it usable in Galaxy (with the downside that we 
+## to make it usable in Galaxy (with the downside that we
 ## need to gzip it again for downstream calls like populations)
 && gunzip -c stacks_outputs/catalog.calls > stacks_outputs/catalog.calls.vcf
 && mv stacks_outputs/denovo_map.log $output_log
@@ -58,11 +58,11 @@ $paired
     </outputs>
 
     <tests>
-       <!-- paired input using also reverse reads,  
-            the results are tested for equality, the tools corresponding the the programs 
-            used in the pipeline have also a test (should be the first) that test for 
-            equality thereby it is "ensured" that the pipeline w defaults is doing the same 
-            as the components w defaults. -->    
+       <!-- paired input using also reverse reads,
+            the results are tested for equality, the tools corresponding the the programs
+            used in the pipeline have also a test (should be the first) that test for
+            equality thereby it is "ensured" that the pipeline w defaults is doing the same
+            as the components w defaults. -->
         <test>
             <param name="input_type|input_type_select" value="paired"/>
             <param name="input_type|fqinputs">
@@ -115,7 +115,7 @@ $paired
             <output ftype="tabular" name="out_sumstats" value="populations/populations.sumstats.tsv" compare="sim_size"/>
             <output ftype="tabular" name="out_sql" value="populations/populations.markers.tsv"/>
         </test>
-        <!-- SE input as multi selection, defaults testing against the output of the pipeline components -->    
+        <!-- SE input as multi selection, defaults testing against the output of the pipeline components -->
         <test>
             <param name="input_type|input_type_select" value="single"/>
             <param name="input_type|fqinputs" value="demultiplexed/PopA_01.1.fq,demultiplexed/PopA_02.1.fq" ftype="fastqsanger" />
@@ -164,7 +164,7 @@ $paired
             <output ftype="tabular" name="out_sumstats"><assert_contents><has_text text="#"/></assert_contents></output>
             <output ftype="tabular" name="out_sql"><assert_contents><has_text text="#"/></assert_contents></output>
         </test>
-        <!-- paired input, deafults (not using reverse reads), testing against the output of the pipeline components (note, this is equal because reverse reads are not used) -->    
+        <!-- paired input, deafults (not using reverse reads), testing against the output of the pipeline components (note, this is equal because reverse reads are not used) -->
         <test>
             <param name="input_type|input_type_select" value="paired"/>
             <param name="input_type|fqinputs">

@@ -33,7 +33,7 @@ sstacks
 $x
 
 @GAP_OPTIONS_ONOFF@
-@TEE_APPEND_LOG@ 
+@TEE_APPEND_LOG@
 @CAT_LOG_TO_STDERR@
 
 #if $popmap

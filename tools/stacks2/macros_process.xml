@@ -169,7 +169,7 @@
     #end if
     ]]></token>
 
-    <!-- advanced options that are shared --> 
+    <!-- advanced options that are shared -->
     <xml name="common_advanced">
         <param name="truncate" type="integer" value="" optional="True" argument="-t" label="Truncate final read length to this value" />
         <param argument="--retain_header" type="boolean" checked="false" truevalue="--retain_header" falsevalue="" label="Retain unmodified FASTQ headers in the output" />

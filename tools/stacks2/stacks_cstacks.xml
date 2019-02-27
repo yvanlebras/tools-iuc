@@ -37,8 +37,8 @@ cstacks
     --k_len $k_len
 #end if
 $report_mmatches
-@TEE_APPEND_LOG@ 
-@CAT_LOG_TO_STDERR@ 
+@TEE_APPEND_LOG@
+@CAT_LOG_TO_STDERR@
 
 #if $popmap
     ## When using a popmap, cstacks writes to the input dir

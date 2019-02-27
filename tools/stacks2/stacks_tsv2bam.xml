@@ -41,7 +41,7 @@ tsv2bam
 ## tsv2bam writes to stdout and creates a log file
 ## - make stdout stderr
 ## - move the additional log file
-2>&1 
+2>&1
 
 #if $output_log
     && mv stacks_inputs/tsv2bam.log $output_log

@@ -1,5 +1,5 @@
 <tool id="stacks2_ustacks" name="Stacks2: ustacks" profile="@PROFILE@" version="@STACKS_VERSION@+galaxy@WRAPPER_VERSION@">
-    <description>Indentify unique stacks</description>
+    <description>Identify unique stacks</description>
     <macros>
         <import>macros.xml</import>
     </macros>
